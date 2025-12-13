@@ -75,52 +75,89 @@
 
         <!-- 文档编辑/查看 -->
         <div v-else class="document-editor">
-          <div class="editor-header">
-            <el-button :icon="ArrowLeft" @click="currentDocument = null">返回</el-button>
-            <div class="editor-actions">
-              <el-button v-if="editMode" @click="handleCancelEdit">取消</el-button>
-              <el-button v-if="!editMode" type="primary" :icon="Edit" @click="editMode = true">编辑</el-button>
-              <el-button v-if="editMode" type="primary" :icon="Check" @click="handleSaveDocument">保存</el-button>
+          <!-- 编辑模式 -->
+          <div v-if="editMode" class="edit-mode">
+            <div class="editor-header">
+              <el-button :icon="ArrowLeft" @click="handleCancelEdit">返回</el-button>
+              <div class="header-center">
+                <h3>{{ documentForm.title || '未命名文档' }}</h3>
+              </div>
+              <div class="editor-actions">
+                <el-button @click="handleCancelEdit">取消</el-button>
+                <el-button type="primary" :icon="Check" @click="handleSaveDocument">保存</el-button>
+              </div>
+            </div>
+            
+            <div class="editor-container">
+              <!-- 左侧：元数据表单 -->
+              <div class="editor-sidebar">
+                <el-form :model="documentForm" label-position="top" size="small">
+                  <el-form-item label="文档标题">
+                    <el-input v-model="documentForm.title" placeholder="请输入文档标题" />
+                  </el-form-item>
+                  <el-form-item label="所属目录">
+                    <el-tree-select
+                      v-model="documentForm.categoryId"
+                      :data="categoryTree"
+                      :props="treeProps"
+                      placeholder="请选择目录"
+                      check-strictly
+                    />
+                  </el-form-item>
+                  <el-form-item label="标签">
+                    <el-input v-model="documentForm.tags" placeholder="多个标签用逗号分隔" />
+                  </el-form-item>
+                  <el-form-item label="排序">
+                    <el-input-number v-model="documentForm.sort" :min="0" style="width: 100%" />
+                  </el-form-item>
+                  <el-form-item label="状态">
+                    <el-radio-group v-model="documentForm.status">
+                      <el-radio :value="0">草稿</el-radio>
+                      <el-radio :value="1">已发布</el-radio>
+                    </el-radio-group>
+                  </el-form-item>
+                </el-form>
+              </div>
+              
+              <!-- 右侧：Vditor 编辑器 -->
+              <div class="editor-main">
+                <div id="vditor"></div>
+              </div>
             </div>
           </div>
           
-          <div v-if="editMode" class="edit-form">
-            <el-form :model="documentForm" label-width="80px">
-              <el-form-item label="标题">
-                <el-input v-model="documentForm.title" placeholder="请输入文档标题" />
-              </el-form-item>
-              <el-form-item label="所属目录">
-                <el-tree-select
-                  v-model="documentForm.categoryId"
-                  :data="categoryTree"
-                  :props="treeProps"
-                  placeholder="请选择目录"
-                  check-strictly
-                />
-              </el-form-item>
-              <el-form-item label="标签">
-                <el-input v-model="documentForm.tags" placeholder="多个标签用逗号分隔" />
-              </el-form-item>
-              <el-form-item label="内容">
-                <el-input
-                  v-model="documentForm.content"
-                  type="textarea"
-                  :rows="20"
-                  placeholder="支持 Markdown 格式"
-                />
-              </el-form-item>
-            </el-form>
-          </div>
-          
-          <div v-else class="view-content">
-            <h1>{{ currentDocument.title }}</h1>
-            <div class="doc-meta">
-              <span>标签: {{ currentDocument.tags || '无' }}</span>
-              <span>浏览: {{ currentDocument.viewCount }}</span>
-              <span>更新: {{ currentDocument.updatedTime }}</span>
+          <!-- 查看模式 -->
+          <div v-else class="view-mode">
+            <div class="view-header">
+              <el-button :icon="ArrowLeft" @click="currentDocument = null">返回</el-button>
+              <el-button type="primary" :icon="Edit" @click="enterEditMode">编辑</el-button>
             </div>
-            <el-divider />
-            <div class="markdown-body" v-html="renderedMarkdown"></div>
+            
+            <div class="view-content">
+              <div class="article-header">
+                <h1 class="article-title">{{ currentDocument.title }}</h1>
+                <div class="article-meta">
+                  <el-tag v-if="currentDocument.status === 0" type="info" size="small">草稿</el-tag>
+                  <el-tag v-else type="success" size="small">已发布</el-tag>
+                  <span v-if="currentDocument.tags" class="meta-item">
+                    <el-icon><PriceTag /></el-icon>
+                    {{ currentDocument.tags }}
+                  </span>
+                  <span class="meta-item">
+                    <el-icon><View /></el-icon>
+                    {{ currentDocument.viewCount }} 次浏览
+                  </span>
+                  <span class="meta-item">
+                    <el-icon><Clock /></el-icon>
+                    {{ currentDocument.updatedTime }}
+                  </span>
+                </div>
+              </div>
+              
+              <el-divider />
+              
+              <div class="article-body vditor-reset" v-html="renderedHtml"></div>
+            </div>
           </div>
         </div>
       </el-main>
@@ -165,10 +202,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Edit, Delete, View, ArrowLeft, Check } from '@element-plus/icons-vue'
-import { marked } from 'marked'
+import { Search, Plus, Edit, Delete, View, ArrowLeft, Check, PriceTag, Clock } from '@element-plus/icons-vue'
+import Vditor from 'vditor'
+import 'vditor/dist/index.css'
 import {
   getCategoryTree,
   createCategory,
@@ -216,14 +254,14 @@ const documentForm = ref({
   version: 0
 })
 
+// Vditor 编辑器实例
+let vditor = null
+
+// 渲染后的 HTML
+const renderedHtml = ref('')
+
 // 搜索
 const searchText = ref('')
-
-// Markdown 渲染
-const renderedMarkdown = computed(() => {
-  if (!currentDocument.value?.content) return ''
-  return marked(currentDocument.value.content)
-})
 
 // 加载目录树
 const loadCategoryTree = async () => {
@@ -357,7 +395,7 @@ const handleDeleteCategory = async (data) => {
 }
 
 // 新建文档
-const handleAddDocument = () => {
+const handleAddDocument = async () => {
   documentForm.value = {
     id: null,
     categoryId: currentCategory.value?.id,
@@ -370,6 +408,9 @@ const handleAddDocument = () => {
   }
   currentDocument.value = {}
   editMode.value = true
+  
+  await nextTick()
+  initVditor()
 }
 
 // 查看文档
@@ -378,6 +419,19 @@ const handleViewDocument = async (row) => {
     const res = await getDocumentById(row.id)
     currentDocument.value = res.data
     editMode.value = false
+    
+    // 渲染 Markdown
+    if (res.data.content) {
+      const previewElement = document.createElement('div')
+      Vditor.preview(previewElement, res.data.content, {
+        mode: 'light',
+        after() {
+          renderedHtml.value = previewElement.innerHTML
+        }
+      })
+    } else {
+      renderedHtml.value = ''
+    }
   } catch (error) {
     ElMessage.error('加载文档失败')
   }
@@ -390,14 +444,31 @@ const handleEditDocument = async (row) => {
     currentDocument.value = res.data
     documentForm.value = { ...res.data }
     editMode.value = true
+    
+    await nextTick()
+    initVditor()
   } catch (error) {
     ElMessage.error('加载文档失败')
   }
 }
 
+// 从查看模式进入编辑模式
+const enterEditMode = async () => {
+  documentForm.value = { ...currentDocument.value }
+  editMode.value = true
+  
+  await nextTick()
+  initVditor()
+}
+
 // 保存文档
 const handleSaveDocument = async () => {
   try {
+    // 从 Vditor 获取内容
+    if (vditor) {
+      documentForm.value.content = vditor.getValue()
+    }
+    
     if (documentForm.value.id) {
       await updateDocument(documentForm.value.id, documentForm.value)
       ElMessage.success('更新成功')
@@ -405,6 +476,10 @@ const handleSaveDocument = async () => {
       await createDocument(documentForm.value)
       ElMessage.success('创建成功')
     }
+    
+    // 销毁编辑器
+    destroyVditor()
+    
     currentDocument.value = null
     editMode.value = false
     if (currentCategory.value) {
@@ -435,36 +510,117 @@ const handleDeleteDocument = async (row) => {
 
 // 取消编辑
 const handleCancelEdit = () => {
+  destroyVditor()
   editMode.value = false
   if (!documentForm.value.id) {
     currentDocument.value = null
   }
 }
 
+// 初始化 Vditor 编辑器
+const initVditor = () => {
+  destroyVditor()
+  
+  vditor = new Vditor('vditor', {
+    height: 'calc(100vh - 280px)',
+    placeholder: '请输入文档内容，支持 Markdown 语法...',
+    theme: 'classic',
+    mode: 'ir', // 即时渲染模式
+    toolbarConfig: {
+      pin: true
+    },
+    cache: {
+      enable: false
+    },
+    after: () => {
+      vditor.setValue(documentForm.value.content || '')
+    },
+    toolbar: [
+      'emoji',
+      'headings',
+      'bold',
+      'italic',
+      'strike',
+      'link',
+      '|',
+      'list',
+      'ordered-list',
+      'check',
+      'outdent',
+      'indent',
+      '|',
+      'quote',
+      'line',
+      'code',
+      'inline-code',
+      'insert-before',
+      'insert-after',
+      '|',
+      'upload',
+      'table',
+      '|',
+      'undo',
+      'redo',
+      '|',
+      'fullscreen',
+      'edit-mode',
+      {
+        name: 'more',
+        toolbar: [
+          'both',
+          'code-theme',
+          'content-theme',
+          'export',
+          'outline',
+          'preview',
+          'devtools',
+          'info',
+          'help'
+        ]
+      }
+    ]
+  })
+}
+
+// 销毁 Vditor 编辑器
+const destroyVditor = () => {
+  if (vditor) {
+    vditor.destroy()
+    vditor = null
+  }
+}
+
 onMounted(() => {
   loadCategoryTree()
+})
+
+onBeforeUnmount(() => {
+  destroyVditor()
 })
 </script>
 
 <style scoped>
 .knowledge-container {
   height: calc(100vh - 60px);
-  padding: 20px;
+  padding: 0;
+  background: #f7f8fa;
 }
 
 .category-aside {
   background: #fff;
-  border-right: 1px solid #e8e8e8;
-  padding: 20px;
+  border-right: 1px solid #e8eaed;
+  padding: 16px 12px;
   overflow-y: auto;
 }
 
 .category-header {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 0 4px;
 }
 
 .add-btn {
   width: 100%;
+  border-radius: 6px;
 }
 
 .custom-tree-node {
@@ -472,7 +628,13 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding-right: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.custom-tree-node:hover {
+  background: #f5f7fa;
 }
 
 .node-actions {
@@ -484,8 +646,8 @@ onMounted(() => {
 }
 
 .main-content {
-  background: #fff;
-  padding: 20px;
+  background: transparent;
+  padding: 0;
   overflow-y: auto;
 }
 
@@ -494,52 +656,305 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding: 20px 24px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.document-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+}
+
+/* 编辑模式 */
+.edit-mode {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
 }
 
 .editor-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e8eaed;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-center {
+  flex: 1;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.header-center h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .editor-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
-.view-content h1 {
-  margin-bottom: 10px;
-}
-
-.doc-meta {
-  color: #999;
-  font-size: 14px;
+.editor-container {
   display: flex;
+  gap: 0;
+  height: calc(100% - 60px);
+  background: #fafbfc;
+}
+
+.editor-sidebar {
+  width: 280px;
+  padding: 20px 16px;
+  background: #fff;
+  border-right: 1px solid #e8eaed;
+  overflow-y: auto;
+}
+
+.editor-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+}
+
+#vditor {
+  height: 100%;
+}
+
+/* 查看模式 - 参考语雀风格 */
+.view-mode {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+}
+
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e8eaed;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.view-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background: #fafbfc;
+}
+
+.article-header {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 48px 64px 32px;
+  background: #fff;
+}
+
+.article-title {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #262626;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.02em;
+}
+
+.article-meta {
+  display: flex;
+  align-items: center;
   gap: 20px;
+  color: #8c8c8c;
+  font-size: 14px;
+  padding: 16px 0;
+  border-top: 1px solid #f0f0f0;
 }
 
-.markdown-body {
-  line-height: 1.8;
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
 }
 
-.markdown-body h1,
-.markdown-body h2,
-.markdown-body h3 {
-  margin-top: 24px;
-  margin-bottom: 16px;
+.article-body {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 32px 64px 80px;
+  min-height: 500px;
+  background: #fff;
+  box-shadow: 0 -1px 0 0 #f0f0f0;
 }
 
-.markdown-body code {
+/* Vditor 样式覆盖 */
+.article-body :deep(.vditor-reset) {
+  font-size: 16px;
+  line-height: 1.75;
+  color: #262626;
+}
+
+.article-body :deep(.vditor-reset h1) {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 32px 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #262626;
+}
+
+.article-body :deep(.vditor-reset h2) {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 28px 0 14px;
+  color: #262626;
+}
+
+.article-body :deep(.vditor-reset h3) {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 24px 0 12px;
+  color: #262626;
+}
+
+.article-body :deep(.vditor-reset p) {
+  margin: 16px 0;
+  line-height: 1.75;
+}
+
+.article-body :deep(.vditor-reset blockquote) {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #fafafa;
+  border-left: 4px solid #0084ff;
+  color: #595959;
+  border-radius: 2px;
+}
+
+.article-body :deep(.vditor-reset code) {
   background: #f5f5f5;
-  padding: 2px 6px;
+  padding: 3px 8px;
   border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  color: #d73a49;
+  border: 1px solid #e8e8e8;
 }
 
-.markdown-body pre {
-  background: #f5f5f5;
+.article-body :deep(.vditor-reset pre) {
+  background: #f6f8fa;
   padding: 16px;
   border-radius: 6px;
   overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid #e8eaed;
+}
+
+.article-body :deep(.vditor-reset pre code) {
+  background: none;
+  padding: 0;
+  border: none;
+  color: inherit;
+}
+
+.article-body :deep(.vditor-reset table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+.article-body :deep(.vditor-reset th),
+.article-body :deep(.vditor-reset td) {
+  border: 1px solid #e8eaed;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.article-body :deep(.vditor-reset th) {
+  background: #fafafa;
+  font-weight: 600;
+  color: #262626;
+}
+
+.article-body :deep(.vditor-reset tr:hover) {
+  background: #fafbfc;
+}
+
+.article-body :deep(.vditor-reset img) {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 24px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.article-body :deep(.vditor-reset a) {
+  color: #0084ff;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.article-body :deep(.vditor-reset a:hover) {
+  border-bottom-color: #0084ff;
+}
+
+.article-body :deep(.vditor-reset ul),
+.article-body :deep(.vditor-reset ol) {
+  padding-left: 28px;
+  margin: 16px 0;
+}
+
+.article-body :deep(.vditor-reset li) {
+  margin: 8px 0;
+  line-height: 1.75;
+}
+
+.article-body :deep(.vditor-reset hr) {
+  border: none;
+  border-top: 1px solid #e8eaed;
+  margin: 32px 0;
+}
+
+/* 滚动条美化 */
+.category-aside::-webkit-scrollbar,
+.view-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.category-aside::-webkit-scrollbar-thumb,
+.view-content::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.category-aside::-webkit-scrollbar-thumb:hover,
+.view-content::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+.category-aside::-webkit-scrollbar-track,
+.view-content::-webkit-scrollbar-track {
+  background: transparent;
 }
 </style>
