@@ -16,6 +16,11 @@
           <span>首页</span>
         </el-menu-item>
         
+        <el-menu-item index="/knowledge">
+          <el-icon><Document /></el-icon>
+          <span>知识库</span>
+        </el-menu-item>
+        
         <el-sub-menu index="system">
           <template #title>
             <el-icon><Setting /></el-icon>

@@ -32,6 +32,12 @@ const routes = [
         name: 'Tenant',
         component: () => import('@/views/system/Tenant.vue'),
         meta: { title: '租户管理' }
+      },
+      {
+        path: 'knowledge',
+        name: 'Knowledge',
+        component: () => import('@/views/knowledge/Index.vue'),
+        meta: { title: '知识库' }
       }
     ]
   }
