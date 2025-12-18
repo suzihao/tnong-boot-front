@@ -62,11 +62,37 @@
         </div>
       </n-layout-content>
     </n-layout>
+
+    <n-modal
+      v-model:show="showCategoryModal"
+      title="新建目录"
+      preset="dialog"
+      :positive-text="'确定'"
+      :negative-text="'取消'"
+      @positive-click="handleCategoryConfirm"
+    >
+      <n-form :model="categoryForm" label-placement="top">
+        <n-form-item label="上级目录">
+          <n-input :value="currentParentName" disabled />
+        </n-form-item>
+        <n-form-item label="目录名称">
+          <n-input v-model:value="categoryForm.name" placeholder="请输入目录名称" />
+        </n-form-item>
+        <n-form-item label="描述">
+          <n-input
+            v-model:value="categoryForm.description"
+            type="textarea"
+            :autosize="{ minRows: 2, maxRows: 4 }"
+            placeholder="可选：对目录用途进行简要说明"
+          />
+        </n-form-item>
+      </n-form>
+    </n-modal>
   </n-card>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NCard,
@@ -78,10 +104,13 @@ import {
   NButton,
   NTag,
   NSpin,
-  NEmpty
+  NEmpty,
+  NModal,
+  NForm,
+  NFormItem
 } from 'naive-ui'
 import { useMessage } from 'naive-ui'
-import { getCategoryTree, getDocumentList, searchDocument, moveCategory } from '@/api/knowledge'
+import { getCategoryTree, getDocumentList, searchDocument, moveCategory, createCategory } from '@/api/knowledge'
 
 const router = useRouter()
 const message = useMessage()
@@ -93,6 +122,27 @@ const selectedCategoryId = ref(null)
 const documents = ref([])
 const docLoading = ref(false)
 const searchTitle = ref('')
+
+const showCategoryModal = ref(false)
+const categoryForm = ref({
+  parentId: null,
+  name: '',
+  description: ''
+})
+
+const currentParentName = computed(() => {
+  if (!categoryForm.value.parentId) return '根目录'
+  const findNode = (nodes, id) => {
+    for (const node of nodes || []) {
+      if (node.id === id) return node
+      const child = findNode(node.children, id)
+      if (child) return child
+    }
+    return null
+  }
+  const node = findNode(categoryTree.value, categoryForm.value.parentId)
+  return node?.name || '根目录'
+})
 
 const buildTree = (list) => {
   const map = {}
@@ -173,7 +223,12 @@ const handleEditDocument = (doc) => {
 }
 
 const handleAddCategory = () => {
-  message.info('目录结构目前支持拖动调整层级与排序，后续再补充可视化目录管理')
+  categoryForm.value = {
+    parentId: selectedCategoryId.value || 0,
+    name: '',
+    description: ''
+  }
+  showCategoryModal.value = true
 }
 
 const handleCreateDocument = () => {
@@ -182,6 +237,27 @@ const handleCreateDocument = () => {
     return
   }
   router.push({ path: '/knowledge/editor', query: { categoryId: selectedCategoryId.value } })
+}
+
+const handleCategoryConfirm = async () => {
+  if (!categoryForm.value.name) {
+    message.warning('请输入目录名称')
+    return false
+  }
+  try {
+    await createCategory({
+      parentId: categoryForm.value.parentId || 0,
+      name: categoryForm.value.name,
+      description: categoryForm.value.description,
+      status: 1
+    })
+    message.success('创建成功')
+    showCategoryModal.value = false
+    await loadCategories()
+  } catch (error) {
+    message.error('创建目录失败')
+    return false
+  }
 }
 
 const handleCategoryDrop = async ({ node, dragNode, dropPosition }) => {
@@ -234,8 +310,8 @@ onMounted(async () => {
 
 <style scoped>
 .kb-container {
-  height: calc(100vh - 120px);
-  background-color: #f5f5f5;
+  min-height: calc(100vh - 120px);
+  background-color: #fff;
   padding: 16px;
   box-sizing: border-box;
 }
@@ -287,8 +363,8 @@ onMounted(async () => {
 }
 
 .kb-doc-card:hover {
-  border-color: #18a058;
-  box-shadow: 0 4px 12px rgba(24, 160, 88, 0.12);
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
   transform: translateY(-2px);
 }
 

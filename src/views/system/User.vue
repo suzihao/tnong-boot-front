@@ -1,51 +1,76 @@
 <template>
-  <n-card title="用户管理" :bordered="false">
+  <n-card :bordered="false" class="user-card">
+    <template #header>
+      <div class="user-card-header">
+        <div class="user-card-title">
+          <n-icon size="18" style="margin-right: 8px"><people-outline /></n-icon>
+          <div>
+            <div class="user-card-title-main">用户管理</div>
+            <div class="user-card-title-sub">管理系统中的用户信息与权限</div>
+          </div>
+        </div>
+        <n-space :size="8">
+          <n-button tertiary size="small" @click="handleQuery">
+            <template #icon><n-icon><refresh-outline /></n-icon></template>
+            刷新
+          </n-button>
+          <n-button type="primary" size="small" @click="handleAdd">
+            <template #icon><n-icon><add-outline /></n-icon></template>
+            新增用户
+          </n-button>
+        </n-space>
+      </div>
+    </template>
+
     <!-- 搜索栏 -->
-    <n-space vertical :size="16">
-      <n-space>
+    <div class="user-toolbar">
+      <n-space :size="12" wrap>
         <n-input
           v-model:value="queryParams.username"
           placeholder="用户名"
           clearable
+          size="small"
           style="width: 200px"
         />
         <n-input
           v-model:value="queryParams.nickname"
           placeholder="昵称"
           clearable
+          size="small"
           style="width: 200px"
         />
         <n-input
           v-model:value="queryParams.mobile"
           placeholder="手机号"
           clearable
+          size="small"
           style="width: 200px"
         />
-        <n-button type="primary" @click="handleQuery">
+        <n-button type="primary" size="small" @click="handleQuery">
           <template #icon><n-icon><search-outline /></n-icon></template>
           查询
         </n-button>
-        <n-button @click="handleReset">
+        <n-button size="small" @click="handleReset">
           <template #icon><n-icon><refresh-outline /></n-icon></template>
           重置
         </n-button>
-        <n-button type="success" @click="handleAdd">
-          <template #icon><n-icon><add-outline /></n-icon></template>
-          新增
-        </n-button>
       </n-space>
+    </div>
 
-      <!-- 表格 -->
-      <n-data-table
-        :columns="columns"
-        :data="tableData"
-        :loading="loading"
-        :pagination="pagination"
-        :bordered="false"
-        @update:page="handlePageChange"
-        @update:page-size="handlePageSizeChange"
-      />
-    </n-space>
+    <!-- 表格 -->
+    <n-data-table
+      class="user-table"
+      :columns="columns"
+      :data="tableData"
+      :loading="loading"
+      :pagination="pagination"
+      :bordered="false"
+      :single-line="false"
+      :striped="true"
+      size="small"
+      @update:page="handlePageChange"
+      @update:page-size="handlePageSizeChange"
+    />
 
     <!-- 新增/编辑弹窗 -->
     <n-modal
@@ -116,7 +141,7 @@ import {
   NPopconfirm,
   NAvatar
 } from 'naive-ui'
-import { SearchOutline, RefreshOutline, AddOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
+import { SearchOutline, RefreshOutline, AddOutline, CreateOutline, TrashOutline, PeopleOutline } from '@vicons/ionicons5'
 import { getUserPage, getUserById, createUser, updateUser, deleteUser } from '@/api/user'
 
 const message = useMessage()

@@ -24,7 +24,7 @@
     </n-layout-sider>
 
     <n-layout>
-      <n-layout-header bordered style="height: 64px; padding: 0 24px">
+      <n-layout-header bordered style="height: 64px; padding: 0 24px; background: #fff; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06); z-index: 10;">
         <div class="header-container">
           <n-breadcrumb>
             <n-breadcrumb-item @click="router.push('/dashboard')">
@@ -38,17 +38,24 @@
 
           <div class="header-right">
             <n-space :size="16" align="center">
+              <n-dropdown :options="colorOptions" @select="handleColorSelect">
+                <n-button text size="small">
+                  <n-icon style="margin-right: 4px"><color-palette-outline /></n-icon>
+                  <span>主题：{{ currentColorLabel }}</span>
+                </n-button>
+              </n-dropdown>
+          
               <n-button
                 text
                 @click="themeStore.toggleTheme()"
                 :style="{ fontSize: '20px', padding: '4px' }"
               >
                 <n-icon>
-                  <sunny-outline v-if="themeStore.isDark" />
-                  <moon-outline v-else />
+                  <moon-outline v-if="themeStore.isDark" />
+                  <sunny-outline v-else />
                 </n-icon>
               </n-button>
-
+          
               <n-dropdown :options="userOptions" @select="handleCommand">
                 <div class="user-info">
                   <n-avatar round size="small">
@@ -62,7 +69,7 @@
         </div>
       </n-layout-header>
 
-      <n-layout-content content-style="padding: 24px;" style="height: calc(100vh - 64px)">
+      <n-layout-content content-style="padding: 24px; background: #f5f5f5;" style="height: calc(100vh - 64px)">
         <router-view />
       </n-layout-content>
     </n-layout>
@@ -94,7 +101,8 @@ import {
   BusinessOutline,
   LogOutOutline,
   SunnyOutline,
-  MoonOutline
+  MoonOutline,
+  ColorPaletteOutline
 } from '@vicons/ionicons5'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
@@ -107,6 +115,21 @@ const themeStore = useThemeStore()
 
 const collapsed = ref(false)
 const activeKey = computed(() => route.path)
+
+const colorOptions = [
+  { label: '绿色风格', key: 'green' },
+  { label: '红色风格', key: 'red' },
+  { label: '蓝色风格', key: 'blue' }
+]
+
+const currentColorLabel = computed(() => {
+  const map = {
+    green: '绿色风格',
+    red: '红色风格',
+    blue: '蓝色风格'
+  }
+  return map[themeStore.colorScheme] || '绿色风格'
+})
 
 function renderIcon(icon) {
   return () => h(NIcon, null, { default: () => h(icon) })
@@ -152,6 +175,10 @@ const userOptions = [
 
 const handleMenuSelect = (key) => {
   router.push(key)
+}
+
+const handleColorSelect = (key) => {
+  themeStore.setColorScheme(key)
 }
 
 const handleCommand = (key) => {

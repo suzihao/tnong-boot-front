@@ -210,7 +210,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .kb-editor-page {
   height: 100vh;
-  background: #f5f5f5;
+  background: #fff;
   display: flex;
   flex-direction: column;
 }
@@ -219,10 +219,10 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 1200px;
+  max-width: 1100px;
   width: 100%;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px 20px 32px;
 }
 
 .kb-editor-topbar {
@@ -231,9 +231,9 @@ onBeforeUnmount(() => {
   align-items: center;
   margin-bottom: 20px;
   padding: 12px 16px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
 .kb-editor-topbar-left {
