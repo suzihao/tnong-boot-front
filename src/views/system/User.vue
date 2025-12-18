@@ -1,149 +1,328 @@
 <template>
-  <div class="user-page">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>用户管理</span>
-          <el-button type="primary" @click="handleAdd">新增用户</el-button>
-        </div>
-      </template>
-      
-      <!-- 查询表单 -->
-      <el-form :model="queryForm" inline class="query-form">
-        <el-form-item label="用户名">
-          <el-input v-model="queryForm.username" placeholder="请输入用户名" clearable />
-        </el-form-item>
-        <el-form-item label="昵称">
-          <el-input v-model="queryForm.nickname" placeholder="请输入昵称" clearable />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleQuery">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-      
-      <!-- 数据表格 -->
-      <el-table :data="tableData" border stripe v-loading="loading">
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="username" label="用户名" />
-        <el-table-column prop="nickname" label="昵称" />
-        <el-table-column prop="email" label="邮箱" />
-        <el-table-column prop="mobile" label="手机号" />
-        <el-table-column prop="status" label="状态">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-              {{ row.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      
-      <!-- 分页 -->
-      <el-pagination
-        v-model:current-page="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
-        class="pagination"
+  <n-card title="用户管理" :bordered="false">
+    <!-- 搜索栏 -->
+    <n-space vertical :size="16">
+      <n-space>
+        <n-input
+          v-model:value="queryParams.username"
+          placeholder="用户名"
+          clearable
+          style="width: 200px"
+        />
+        <n-input
+          v-model:value="queryParams.nickname"
+          placeholder="昵称"
+          clearable
+          style="width: 200px"
+        />
+        <n-input
+          v-model:value="queryParams.mobile"
+          placeholder="手机号"
+          clearable
+          style="width: 200px"
+        />
+        <n-button type="primary" @click="handleQuery">
+          <template #icon><n-icon><search-outline /></n-icon></template>
+          查询
+        </n-button>
+        <n-button @click="handleReset">
+          <template #icon><n-icon><refresh-outline /></n-icon></template>
+          重置
+        </n-button>
+        <n-button type="success" @click="handleAdd">
+          <template #icon><n-icon><add-outline /></n-icon></template>
+          新增
+        </n-button>
+      </n-space>
+
+      <!-- 表格 -->
+      <n-data-table
+        :columns="columns"
+        :data="tableData"
+        :loading="loading"
+        :pagination="pagination"
+        :bordered="false"
+        @update:page="handlePageChange"
+        @update:page-size="handlePageSizeChange"
       />
-    </el-card>
-  </div>
+    </n-space>
+
+    <!-- 新增/编辑弹窗 -->
+    <n-modal
+      v-model:show="showModal"
+      :title="modalTitle"
+      preset="dialog"
+      :positive-text="'确定'"
+      :negative-text="'取消'"
+      @positive-click="handleSubmit"
+    >
+      <n-form
+        ref="formRef"
+        :model="formData"
+        :rules="rules"
+        label-placement="left"
+        label-width="100"
+        style="margin-top: 20px"
+      >
+        <n-form-item label="用户名" path="username">
+          <n-input v-model:value="formData.username" :disabled="!!formData.id" placeholder="请输入用户名" />
+        </n-form-item>
+        <n-form-item v-if="!formData.id" label="密码" path="password">
+          <n-input v-model:value="formData.password" type="password" show-password-on="click" placeholder="请输入密码" />
+        </n-form-item>
+        <n-form-item label="昵称" path="nickname">
+          <n-input v-model:value="formData.nickname" placeholder="请输入昵称" />
+        </n-form-item>
+        <n-form-item label="手机号" path="mobile">
+          <n-input v-model:value="formData.mobile" placeholder="请输入手机号" />
+        </n-form-item>
+        <n-form-item label="邮箱" path="email">
+          <n-input v-model:value="formData.email" placeholder="请输入邮箱" />
+        </n-form-item>
+        <n-form-item label="状态" path="status">
+          <n-switch v-model:value="formData.status" :checked-value="1" :unchecked-value="0">
+            <template #checked>启用</template>
+            <template #unchecked>禁用</template>
+          </n-switch>
+        </n-form-item>
+        <n-form-item label="备注" path="remark">
+          <n-input
+            v-model:value="formData.remark"
+            type="textarea"
+            :autosize="{ minRows: 3, maxRows: 5 }"
+            placeholder="请输入备注"
+          />
+        </n-form-item>
+      </n-form>
+    </n-modal>
+  </n-card>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserPage, deleteUser } from '@/api/user'
+import { ref, reactive, h, onMounted } from 'vue'
+import { useMessage } from 'naive-ui'
+import {
+  NCard,
+  NSpace,
+  NInput,
+  NButton,
+  NIcon,
+  NDataTable,
+  NModal,
+  NForm,
+  NFormItem,
+  NSwitch,
+  NTag,
+  NPopconfirm,
+  NAvatar
+} from 'naive-ui'
+import { SearchOutline, RefreshOutline, AddOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
+import { getUserPage, getUserById, createUser, updateUser, deleteUser } from '@/api/user'
+
+const message = useMessage()
 
 const loading = ref(false)
-const tableData = ref([])
-const total = ref(0)
+const showModal = ref(false)
+const modalTitle = ref('新增用户')
+const formRef = ref(null)
 
-const queryForm = reactive({
+const queryParams = reactive({
   username: '',
   nickname: '',
-  pageNum: 1,
-  pageSize: 10
+  mobile: '',
+  current: 1,
+  size: 10
 })
 
-const handleQuery = async () => {
+const tableData = ref([])
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  itemCount: 0,
+  showSizePicker: true,
+  pageSizes: [10, 20, 50, 100]
+})
+
+const formData = reactive({
+  id: null,
+  username: '',
+  password: '',
+  nickname: '',
+  mobile: '',
+  email: '',
+  status: 1,
+  remark: '',
+  version: null
+})
+
+const rules = {
+  username: { required: true, message: '请输入用户名', trigger: 'blur' },
+  password: { required: true, message: '请输入密码', trigger: 'blur' },
+  nickname: { required: true, message: '请输入昵称', trigger: 'blur' }
+}
+
+const columns = [
+  { title: 'ID', key: 'id', width: 80 },
+  {
+    title: '头像',
+    key: 'avatar',
+    width: 80,
+    render: (row) => {
+      return h(NAvatar, {
+        round: true,
+        size: 'small'
+      }, { default: () => row.nickname?.charAt(0) || 'U' })
+    }
+  },
+  { title: '用户名', key: 'username', width: 150 },
+  { title: '昵称', key: 'nickname', width: 120 },
+  { title: '手机号', key: 'mobile', width: 130 },
+  { title: '邮箱', key: 'email', width: 180 },
+  {
+    title: '状态',
+    key: 'status',
+    width: 80,
+    render: (row) => {
+      return h(NTag, { type: row.status === 1 ? 'success' : 'error' }, {
+        default: () => row.status === 1 ? '启用' : '禁用'
+      })
+    }
+  },
+  { title: '最后登录时间', key: 'lastLoginTime', width: 160 },
+  { title: '创建时间', key: 'createdTime', width: 160 },
+  {
+    title: '操作',
+    key: 'actions',
+    width: 150,
+    fixed: 'right',
+    render: (row) => {
+      return h(NSpace, {}, {
+        default: () => [
+          h(NButton, {
+            size: 'small',
+            type: 'primary',
+            text: true,
+            onClick: () => handleEdit(row)
+          }, { default: () => '编辑', icon: () => h(NIcon, {}, { default: () => h(CreateOutline) }) }),
+          h(NPopconfirm, {
+            onPositiveClick: () => handleDelete(row)
+          }, {
+            trigger: () => h(NButton, {
+              size: 'small',
+              type: 'error',
+              text: true
+            }, { default: () => '删除', icon: () => h(NIcon, {}, { default: () => h(TrashOutline) }) }),
+            default: () => '确定删除该用户吗？'
+          })
+        ]
+      })
+    }
+  }
+]
+
+const getList = async () => {
   loading.value = true
   try {
-    const res = await getUserPage(queryForm)
+    const params = {
+      ...queryParams,
+      current: pagination.page,
+      size: pagination.pageSize
+    }
+    const res = await getUserPage(params)
     if (res.code === 200) {
-      tableData.value = res.data.list
-      total.value = res.data.total
+      tableData.value = res.data.records
+      pagination.itemCount = res.data.total
     }
   } catch (error) {
-    console.error('查询失败:', error)
+    message.error('查询失败')
   } finally {
     loading.value = false
   }
 }
 
+const handleQuery = () => {
+  pagination.page = 1
+  getList()
+}
+
 const handleReset = () => {
-  queryForm.username = ''
-  queryForm.nickname = ''
-  queryForm.pageNum = 1
+  queryParams.username = ''
+  queryParams.nickname = ''
+  queryParams.mobile = ''
   handleQuery()
+}
+
+const handlePageChange = (page) => {
+  pagination.page = page
+  getList()
+}
+
+const handlePageSizeChange = (pageSize) => {
+  pagination.pageSize = pageSize
+  pagination.page = 1
+  getList()
 }
 
 const handleAdd = () => {
-  ElMessage.info('新增功能开发中...')
-}
-
-const handleEdit = (row) => {
-  ElMessage.info('编辑功能开发中...')
-}
-
-const handleDelete = (row) => {
-  ElMessageBox.confirm(`确定要删除用户 ${row.username} 吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      await deleteUser(row.id)
-      ElMessage.success('删除成功')
-      handleQuery()
-    } catch (error) {
-      console.error('删除失败:', error)
-    }
+  modalTitle.value = '新增用户'
+  Object.assign(formData, {
+    id: null,
+    username: '',
+    password: '',
+    nickname: '',
+    mobile: '',
+    email: '',
+    status: 1,
+    remark: '',
+    version: null
   })
+  showModal.value = true
+}
+
+const handleEdit = async (row) => {
+  modalTitle.value = '编辑用户'
+  try {
+    const res = await getUserById(row.id)
+    if (res.code === 200) {
+      Object.assign(formData, res.data)
+      showModal.value = true
+    }
+  } catch (error) {
+    message.error('获取详情失败')
+  }
+}
+
+const handleSubmit = async () => {
+  try {
+    await formRef.value?.validate()
+    
+    if (formData.id) {
+      await updateUser(formData)
+      message.success('更新成功')
+    } else {
+      await createUser(formData)
+      message.success('新增成功')
+    }
+    
+    showModal.value = false
+    getList()
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
+const handleDelete = async (row) => {
+  try {
+    await deleteUser(row.id, row.version)
+    message.success('删除成功')
+    getList()
+  } catch (error) {
+    message.error('删除失败')
+  }
 }
 
 onMounted(() => {
-  handleQuery()
+  getList()
 })
 </script>
-
-<style scoped>
-.user-page {
-  width: 100%;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.query-form {
-  margin-bottom: 20px;
-}
-
-.pagination {
-  margin-top: 20px;
-  justify-content: flex-end;
-}
-</style>

@@ -1,8 +1,20 @@
 <template>
-  <router-view />
+  <n-config-provider :theme="isDark ? darkTheme : null">
+    <n-message-provider>
+      <n-dialog-provider>
+        <router-view />
+      </n-dialog-provider>
+    </n-message-provider>
+  </n-config-provider>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { NConfigProvider, NMessageProvider, NDialogProvider, darkTheme } from 'naive-ui'
+import { useThemeStore } from '@/stores/theme'
+
+const themeStore = useThemeStore()
+const isDark = computed(() => themeStore.isDark)
 </script>
 
 <style>

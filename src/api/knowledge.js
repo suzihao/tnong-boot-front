@@ -54,7 +54,16 @@ export function deleteCategory(id) {
   })
 }
 
-// ==================== 知识文档 ====================
+/**
+ * 拖动调整目录层级与排序
+ */
+export function moveCategory(params) {
+  return request({
+    url: '/kb/category/move',
+    method: 'post',
+    params
+  })
+}
 
 /**
  * 根据目录ID获取文档列表
@@ -68,13 +77,13 @@ export function getDocumentList(categoryId) {
 }
 
 /**
- * 搜索文档
+ * 搜索文档（全文：标题、内容、标签）
  */
-export function searchDocument(title) {
+export function searchDocument(keyword) {
   return request({
     url: '/kb/document/search',
     method: 'get',
-    params: { title }
+    params: { keyword }
   })
 }
 

@@ -1,131 +1,196 @@
 <template>
-  <el-container class="layout-container">
-    <el-aside width="200px" class="sidebar">
+  <n-layout has-sider style="height: 100vh">
+    <n-layout-sider
+      bordered
+      collapse-mode="width"
+      :collapsed-width="64"
+      :width="240"
+      show-trigger
+      @collapse="collapsed = true"
+      @expand="collapsed = false"
+    >
       <div class="logo">
-        <h2>TNong Boot</h2>
+        <h2 v-if="!collapsed">TNong Boot</h2>
+        <h2 v-else>TB</h2>
       </div>
-      <el-menu
-        :default-active="activeMenu"
-        router
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409eff"
-      >
-        <el-menu-item index="/dashboard">
-          <el-icon><HomeFilled /></el-icon>
-          <span>首页</span>
-        </el-menu-item>
-        
-        <el-menu-item index="/knowledge">
-          <el-icon><Document /></el-icon>
-          <span>知识库</span>
-        </el-menu-item>
-        
-        <el-sub-menu index="system">
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item index="/user">
-            <el-icon><User /></el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/tenant">
-            <el-icon><OfficeBuilding /></el-icon>
-            <span>租户管理</span>
-          </el-menu-item>
-        </el-sub-menu>
-      </el-menu>
-    </el-aside>
-    
-    <el-container>
-      <el-header class="header">
-        <div class="header-left">
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item v-if="$route.meta.title">{{ $route.meta.title }}</el-breadcrumb-item>
-          </el-breadcrumb>
+      <n-menu
+        :collapsed="collapsed"
+        :collapsed-width="64"
+        :collapsed-icon-size="22"
+        :options="menuOptions"
+        :value="activeKey"
+        @update:value="handleMenuSelect"
+      />
+    </n-layout-sider>
+
+    <n-layout>
+      <n-layout-header bordered style="height: 64px; padding: 0 24px">
+        <div class="header-container">
+          <n-breadcrumb>
+            <n-breadcrumb-item @click="router.push('/dashboard')">
+              <n-icon><home-outline /></n-icon>
+              首页
+            </n-breadcrumb-item>
+            <n-breadcrumb-item v-if="route.meta.title">
+              {{ route.meta.title }}
+            </n-breadcrumb-item>
+          </n-breadcrumb>
+
+          <div class="header-right">
+            <n-space :size="16" align="center">
+              <n-button
+                text
+                @click="themeStore.toggleTheme()"
+                :style="{ fontSize: '20px', padding: '4px' }"
+              >
+                <n-icon>
+                  <sunny-outline v-if="themeStore.isDark" />
+                  <moon-outline v-else />
+                </n-icon>
+              </n-button>
+
+              <n-dropdown :options="userOptions" @select="handleCommand">
+                <div class="user-info">
+                  <n-avatar round size="small">
+                    {{ userStore.userInfo.nickname?.charAt(0) || 'U' }}
+                  </n-avatar>
+                  <span class="username">{{ userStore.userInfo.nickname || userStore.userInfo.username }}</span>
+                </div>
+              </n-dropdown>
+            </n-space>
+          </div>
         </div>
-        <div class="header-right">
-          <el-dropdown @command="handleCommand">
-            <span class="user-info">
-              <el-icon><UserFilled /></el-icon>
-              <span>{{ userStore.userInfo.nickname || userStore.userInfo.username }}</span>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </el-header>
-      
-      <el-main class="main-content">
+      </n-layout-header>
+
+      <n-layout-content content-style="padding: 24px;" style="height: calc(100vh - 64px)">
         <router-view />
-      </el-main>
-    </el-container>
-  </el-container>
+      </n-layout-content>
+    </n-layout>
+  </n-layout>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { NIcon, useDialog } from 'naive-ui'
+import {
+  NLayout,
+  NLayoutSider,
+  NLayoutHeader,
+  NLayoutContent,
+  NMenu,
+  NBreadcrumb,
+  NBreadcrumbItem,
+  NDropdown,
+  NAvatar,
+  NButton,
+  NSpace
+} from 'naive-ui'
+import {
+  HomeOutline,
+  DocumentTextOutline,
+  SettingsOutline,
+  PeopleOutline,
+  BusinessOutline,
+  LogOutOutline,
+  SunnyOutline,
+  MoonOutline
+} from '@vicons/ionicons5'
 import { useUserStore } from '@/stores/user'
+import { useThemeStore } from '@/stores/theme'
 
 const route = useRoute()
 const router = useRouter()
+const dialog = useDialog()
 const userStore = useUserStore()
+const themeStore = useThemeStore()
 
-const activeMenu = computed(() => route.path)
+const collapsed = ref(false)
+const activeKey = computed(() => route.path)
 
-const handleCommand = async (command) => {
-  if (command === 'logout') {
-    ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }).then(async () => {
-      await userStore.logout()
-      router.push('/login')
+function renderIcon(icon) {
+  return () => h(NIcon, null, { default: () => h(icon) })
+}
+
+const menuOptions = [
+  {
+    label: '首页',
+    key: '/dashboard',
+    icon: renderIcon(HomeOutline)
+  },
+  {
+    label: '知识库',
+    key: '/knowledge',
+    icon: renderIcon(DocumentTextOutline)
+  },
+  {
+    label: '系统管理',
+    key: 'system',
+    icon: renderIcon(SettingsOutline),
+    children: [
+      {
+        label: '用户管理',
+        key: '/user',
+        icon: renderIcon(PeopleOutline)
+      },
+      {
+        label: '租户管理',
+        key: '/tenant',
+        icon: renderIcon(BusinessOutline)
+      }
+    ]
+  }
+]
+
+const userOptions = [
+  {
+    label: '退出登录',
+    key: 'logout',
+    icon: renderIcon(LogOutOutline)
+  }
+]
+
+const handleMenuSelect = (key) => {
+  router.push(key)
+}
+
+const handleCommand = (key) => {
+  if (key === 'logout') {
+    dialog.warning({
+      title: '提示',
+      content: '确定要退出登录吗？',
+      positiveText: '确定',
+      negativeText: '取消',
+      onPositiveClick: async () => {
+        await userStore.logout()
+        router.push('/login')
+      }
     })
   }
 }
 </script>
 
 <style scoped>
-.layout-container {
-  height: 100vh;
-}
-
-.sidebar {
-  background-color: #304156;
-  overflow-y: auto;
-}
-
 .logo {
-  height: 60px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #2b3a4a;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .logo h2 {
-  color: #fff;
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 600;
   margin: 0;
+  color: #18a058;
 }
 
-.header {
+.header-container {
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #fff;
-  border-bottom: 1px solid #e6e6e6;
-  padding: 0 20px;
 }
 
 .header-right {
@@ -133,23 +198,27 @@ const handleCommand = async (command) => {
   align-items: center;
 }
 
+.header-right .n-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .user-info {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  padding: 5px 10px;
+  padding: 8px 12px;
   border-radius: 4px;
   transition: background-color 0.3s;
 }
 
 .user-info:hover {
-  background-color: #f5f7fa;
+  background-color: #f5f5f5;
 }
 
-.main-content {
-  background-color: #f0f2f5;
-  padding: 20px;
-  overflow-y: auto;
+.username {
+  font-size: 14px;
 }
 </style>

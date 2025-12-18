@@ -1,54 +1,36 @@
 import request from '@/utils/request'
 
 /**
- * 获取用户分页列表
+ * 分页查询用户列表
  */
-export function getUserPage(params) {
-  return request({
-    url: '/system/user/page',
-    method: 'get',
-    params
-  })
+export const getUserPage = (params) => {
+  return request.get('/system/user/page', { params })
 }
 
 /**
- * 获取用户详情
+ * 根据ID查询用户详情
  */
-export function getUserDetail(id) {
-  return request({
-    url: `/system/user/${id}`,
-    method: 'get'
-  })
+export const getUserById = (id) => {
+  return request.get(`/system/user/${id}`)
 }
 
 /**
  * 新增用户
  */
-export function createUser(data) {
-  return request({
-    url: '/system/user',
-    method: 'post',
-    data
-  })
+export const createUser = (data) => {
+  return request.post('/system/user', data)
 }
 
 /**
  * 更新用户
  */
-export function updateUser(data) {
-  return request({
-    url: '/system/user',
-    method: 'put',
-    data
-  })
+export const updateUser = (data) => {
+  return request.put('/system/user', data)
 }
 
 /**
  * 删除用户
  */
-export function deleteUser(id) {
-  return request({
-    url: `/system/user/${id}`,
-    method: 'delete'
-  })
+export const deleteUser = (id, version) => {
+  return request.delete(`/system/user/${id}`, { params: { version } })
 }
