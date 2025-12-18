@@ -9,6 +9,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/wecom-callback',
+    name: 'WecomCallback',
+    component: () => import('@/views/WecomCallback.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/',
     name: 'Layout',
     component: () => import('@/layout/Index.vue'),

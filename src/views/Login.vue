@@ -44,6 +44,15 @@
         >
           登 录
         </el-button>
+
+        <el-button
+          type="success"
+          size="large"
+          class="login-btn wecom-btn"
+          @click="handleWecomLogin"
+        >
+          使用企业微信登录
+        </el-button>
       </el-form>
       
       <div class="tips">
@@ -99,6 +108,29 @@ const handleLogin = async () => {
     }
   })
 }
+
+const handleWecomLogin = () => {
+  const corpId = import.meta.env.VITE_WECOM_CORP_ID
+  const agentId = import.meta.env.VITE_WECOM_AGENT_ID
+  const redirectUri = encodeURIComponent(
+    import.meta.env.VITE_WECOM_REDIRECT_URI || `${window.location.origin}/wecom-callback`
+  )
+  const state = Date.now().toString()
+
+  if (!corpId || !agentId) {
+    ElMessage.error('企业微信登录未配置，请联系管理员')
+    return
+  }
+
+  const url =
+    'https://login.work.weixin.qq.com/wwlogin/sso/login' + `?login_type=CorpApp` +
+    `&appid=${corpId}` +
+    `&agentid=${agentId}` +
+    `&redirect_uri=${redirectUri}` +
+    `&state=${state}`
+
+  window.location.href = url
+}
 </script>
 
 <style scoped>
@@ -141,6 +173,10 @@ const handleLogin = async () => {
 .login-btn {
   width: 100%;
   margin-top: 10px;
+}
+
+.wecom-btn {
+  margin-top: 12px;
 }
 
 .tips {

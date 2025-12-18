@@ -30,3 +30,14 @@ export function getUserInfo() {
     method: 'get'
   })
 }
+
+/**
+ * 企业微信登录回调
+ */
+export function wecomCallback(params) {
+  return request({
+    url: '/auth/wecom/callback',
+    method: 'get',
+    params
+  })
+}

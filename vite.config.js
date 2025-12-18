@@ -11,7 +11,8 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0', // 允许局域网访问
-    port: 3000,
+    port: 999,
+    allowedHosts: ['report.tnong.com', '192.168.1.100'],
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
