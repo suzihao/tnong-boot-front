@@ -15,6 +15,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/knowledge/editor',
+    name: 'KnowledgeEditor',
+    component: () => import('@/views/knowledge/Editor.vue'),
+    meta: { requiresAuth: true, title: '文档编辑' }
+  },
+  {
     path: '/',
     name: 'Layout',
     component: () => import('@/layout/Index.vue'),
@@ -44,6 +50,12 @@ const routes = [
         name: 'Knowledge',
         component: () => import('@/views/knowledge/Index.vue'),
         meta: { title: '知识库' }
+      },
+      {
+        path: 'tiptap-demo',
+        name: 'TiptapDemo',
+        component: () => import('@/views/knowledge/TiptapDemo.vue'),
+        meta: { title: 'Tiptap编辑器' }
       }
     ]
   }

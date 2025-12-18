@@ -23,97 +23,40 @@
 
       <n-layout-content content-style="padding: 0 16px;">
         <div class="kb-main">
-          <div class="kb-main-left">
-            <div class="kb-doc-toolbar">
-              <n-input
-                v-model:value="searchTitle"
-                size="small"
-                placeholder="搜索文档标题"
-                clearable
-                @keyup.enter="handleSearch"
-              />
-              <n-button size="small" type="primary" @click="handleCreateDocument">新建文档</n-button>
-            </div>
-            <div class="kb-doc-list">
-              <n-spin :show="docLoading">
-                <n-empty v-if="!documents.length" description="暂无文档" />
-                <div v-else>
-                  <div
-                    v-for="doc in documents"
-                    :key="doc.id"
-                    :class="['kb-doc-item', { active: currentDocument && doc.id === currentDocument.id }]"
-                    @click="handleSelectDocument(doc)"
-                  >
-                    <div class="kb-doc-title">{{ doc.title }}</div>
-                    <div class="kb-doc-meta">
-                      <span>浏览 {{ doc.viewCount || 0 }}</span>
-                      <n-tag size="small" type="success" v-if="doc.status === 1">已发布</n-tag>
-                      <n-tag size="small" type="warning" v-else>草稿</n-tag>
-                    </div>
-                  </div>
-                </div>
-              </n-spin>
-            </div>
+          <div class="kb-doc-toolbar">
+            <n-input
+              v-model:value="searchTitle"
+              size="small"
+              placeholder="搜索文档标题"
+              clearable
+              @keyup.enter="handleSearch"
+            />
+            <n-button size="small" type="primary" @click="handleCreateDocument">新建文档</n-button>
           </div>
-
-          <div class="kb-main-right">
-            <n-spin :show="editorLoading">
-              <div v-if="currentDocument" :class="['kb-editor-panel', { fullscreen: isFullscreen }]">
-                <div class="kb-editor-header">
-                  <n-input
-                    v-model:value="form.title"
-                    placeholder="请输入文档标题"
-                    size="large"
-                  />
-                  <n-space>
-                    <n-switch v-model:value="form.status" :checked-value="1" :unchecked-value="0">
-                      <template #checked>已发布</template>
-                      <template #unchecked>草稿</template>
-                    </n-switch>
-                    <n-button size="small" quaternary @click="toggleFullscreen">
-                      {{ isFullscreen ? '退出全屏' : '全屏编辑' }}
-                    </n-button>
-                    <n-button size="small" @click="handleDeleteDocument" type="error" secondary>删除</n-button>
-                    <n-button size="small" type="primary" @click="handleSave">保存</n-button>
-                  </n-space>
-                </div>
-
-                <div class="kb-editor-tags">
-                  <n-input
-                    v-model:value="form.tags"
-                    size="small"
-                    placeholder="标签，逗号分隔，如：后端,Spring Boot,数据库"
-                  />
-                </div>
-
-                <div class="kb-editor-toolbar">
-                  <n-space size="small">
-                    <n-button text @click="toggleBold">
-                      <span class="kb-toolbar-button" :class="{ active: isBoldActive }">B</span>
-                    </n-button>
-                    <n-button text @click="toggleItalic">
-                      <span class="kb-toolbar-button" :class="{ active: isItalicActive }">I</span>
-                    </n-button>
-                    <n-button text @click="setHeading(1)">
-                      <span class="kb-toolbar-button">H1</span>
-                    </n-button>
-                    <n-button text @click="setHeading(2)">
-                      <span class="kb-toolbar-button">H2</span>
-                    </n-button>
-                    <n-button text @click="toggleBulletList">
-                      <span class="kb-toolbar-button">• 列表</span>
-                    </n-button>
-                    <n-button text @click="toggleOrderedList">
-                      <span class="kb-toolbar-button">1. 列表</span>
-                    </n-button>
-                  </n-space>
-                </div>
-
-                <div class="kb-editor-content">
-                  <EditorContent v-if="editor" :editor="editor" />
+          
+          <div class="kb-doc-list">
+            <n-spin :show="docLoading">
+              <n-empty v-if="!documents.length" description="暂无文档" />
+              <div v-else class="kb-doc-grid">
+                <div
+                  v-for="doc in documents"
+                  :key="doc.id"
+                  class="kb-doc-card"
+                  @click="handleEditDocument(doc)"
+                >
+                  <div class="kb-doc-card-header">
+                    <div class="kb-doc-card-title">{{ doc.title }}</div>
+                    <n-tag size="small" :type="doc.status === 1 ? 'success' : 'warning'">
+                      {{ doc.status === 1 ? '已发布' : '草稿' }}
+                    </n-tag>
+                  </div>
+                  <div class="kb-doc-card-meta">
+                    <span>浏览 {{ doc.viewCount || 0 }}</span>
+                    <span v-if="doc.tags" class="kb-doc-tags">{{ doc.tags }}</span>
+                  </div>
+                  <div class="kb-doc-card-time">更新于 {{ formatTime(doc.updateTime) }}</div>
                 </div>
               </div>
-              <n-empty v-else description="请选择左侧文档或新建文档" />
             </n-spin>
           </div>
         </div>
@@ -123,7 +66,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   NCard,
   NLayout,
@@ -133,17 +77,13 @@ import {
   NInput,
   NButton,
   NTag,
-  NSpace,
   NSpin,
-  NEmpty,
-  NSwitch
+  NEmpty
 } from 'naive-ui'
-import { Editor, EditorContent } from '@tiptap/vue-3'
-import StarterKit from '@tiptap/starter-kit'
 import { useMessage } from 'naive-ui'
-import { getCategoryTree, getDocumentList, getDocumentById, createDocument, updateDocument, deleteDocument, searchDocument } from '@/api/knowledge'
-import { moveCategory } from '@/api/knowledge'
+import { getCategoryTree, getDocumentList, searchDocument, moveCategory } from '@/api/knowledge'
 
+const router = useRouter()
 const message = useMessage()
 
 const categoryTree = ref([])
@@ -151,23 +91,8 @@ const expandedKeys = ref([])
 const selectedCategoryId = ref(null)
 
 const documents = ref([])
-const currentDocument = ref(null)
 const docLoading = ref(false)
-const editorLoading = ref(false)
-const isFullscreen = ref(false)
 const searchTitle = ref('')
-
-const form = reactive({
-  id: null,
-  title: '',
-  status: 1,
-  categoryId: null,
-  tags: '',
-  sort: 0,
-  version: null
-})
-
-let editor = null
 
 const buildTree = (list) => {
   const map = {}
@@ -210,7 +135,6 @@ const onCategorySelect = async (keys) => {
 const loadDocuments = async () => {
   if (!selectedCategoryId.value) {
     documents.value = []
-    currentDocument.value = null
     return
   }
   docLoading.value = true
@@ -218,7 +142,6 @@ const loadDocuments = async () => {
     const res = await getDocumentList(selectedCategoryId.value)
     if (res.code === 200) {
       documents.value = res.data || []
-      currentDocument.value = null
     }
   } catch (error) {
     message.error('加载文档列表失败')
@@ -237,7 +160,6 @@ const handleSearch = async () => {
     const res = await searchDocument(searchTitle.value)
     if (res.code === 200) {
       documents.value = res.data || []
-      currentDocument.value = null
     }
   } catch (error) {
     message.error('搜索文档失败')
@@ -246,28 +168,8 @@ const handleSearch = async () => {
   }
 }
 
-const handleSelectDocument = async (doc) => {
-  editorLoading.value = true
-  try {
-    const res = await getDocumentById(doc.id)
-    if (res.code === 200) {
-      currentDocument.value = res.data
-      form.id = res.data.id
-      form.title = res.data.title
-      form.status = res.data.status
-      form.categoryId = res.data.categoryId
-      form.tags = res.data.tags || ''
-      form.sort = res.data.sort || 0
-      form.version = res.data.version
-      if (editor) {
-        editor.commands.setContent(res.data.content || '')
-      }
-    }
-  } catch (error) {
-    message.error('加载文档失败')
-  } finally {
-    editorLoading.value = false
-  }
+const handleEditDocument = (doc) => {
+  router.push({ path: '/knowledge/editor', query: { id: doc.id } })
 }
 
 const handleAddCategory = () => {
@@ -279,54 +181,7 @@ const handleCreateDocument = () => {
     message.warning('请先选择左侧目录')
     return
   }
-  currentDocument.value = { id: null }
-  form.id = null
-  form.title = ''
-  form.status = 0
-  form.categoryId = selectedCategoryId.value
-  form.tags = ''
-  form.sort = 0
-  form.version = null
-  if (editor) {
-    editor.commands.clearContent()
-  }
-}
-
-const handleSave = async () => {
-  if (!selectedCategoryId.value) {
-    message.warning('请先选择目录')
-    return
-  }
-  if (!form.title) {
-    message.warning('请输入文档标题')
-    return
-  }
-  const payload = {
-    categoryId: form.categoryId || selectedCategoryId.value,
-    title: form.title,
-    content: editor ? editor.getHTML() : '',
-    tags: form.tags,
-    sort: form.sort,
-    status: form.status,
-    version: form.version
-  }
-  try {
-    if (form.id) {
-      const res = await updateDocument(form.id, payload)
-      if (res.code === 200) {
-        message.success('更新成功')
-        await loadDocuments()
-      }
-    } else {
-      const res = await createDocument(payload)
-      if (res.code === 200) {
-        message.success('创建成功')
-        await loadDocuments()
-      }
-    }
-  } catch (error) {
-    message.error('保存失败')
-  }
+  router.push({ path: '/knowledge/editor', query: { categoryId: selectedCategoryId.value } })
 }
 
 const handleCategoryDrop = async ({ node, dragNode, dropPosition }) => {
@@ -360,44 +215,20 @@ const handleCategoryDrop = async ({ node, dragNode, dropPosition }) => {
   }
 }
 
-const handleDeleteDocument = async () => {
-  if (!currentDocument.value || !currentDocument.value.id) return
-  try {
-    const res = await deleteDocument(currentDocument.value.id)
-    if (res.code === 200) {
-      message.success('删除成功')
-      await loadDocuments()
-    }
-  } catch (error) {
-    message.error('删除失败')
-  }
-}
-
-const toggleBold = () => editor && editor.chain().focus().toggleBold().run()
-const toggleItalic = () => editor && editor.chain().focus().toggleItalic().run()
-const setHeading = (level) => editor && editor.chain().focus().toggleHeading({ level }).run()
-const toggleBulletList = () => editor && editor.chain().focus().toggleBulletList().run()
-const toggleOrderedList = () => editor && editor.chain().focus().toggleOrderedList().run()
-
-const isBoldActive = computed(() => editor && editor.isActive('bold'))
-const isItalicActive = computed(() => editor && editor.isActive('italic'))
-
-const toggleFullscreen = () => {
-  isFullscreen.value = !isFullscreen.value
+const formatTime = (time) => {
+  if (!time) return '-'
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now - date
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  if (days === 0) return '今天'
+  if (days === 1) return '昨天'
+  if (days < 7) return `${days}天前`
+  return date.toLocaleDateString('zh-CN')
 }
 
 onMounted(async () => {
-  editor = new Editor({
-    extensions: [StarterKit],
-    content: ''
-  })
   await loadCategories()
-})
-
-onBeforeUnmount(() => {
-  if (editor) {
-    editor.destroy()
-  }
 })
 </script>
 
@@ -411,20 +242,8 @@ onBeforeUnmount(() => {
 
 .kb-main {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
   height: 100%;
-}
-
-.kb-main-left {
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-}
-
-.kb-main-right {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
 }
 
 .kb-sider-header {
@@ -442,7 +261,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .kb-doc-list {
@@ -450,99 +269,66 @@ onBeforeUnmount(() => {
   overflow: auto;
 }
 
-.kb-doc-item {
-  padding: 8px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 4px;
+.kb-doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 4px;
 }
 
-.kb-doc-item.active {
-  background-color: #f0f9eb;
-}
-
-.kb-doc-title {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.kb-doc-meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 12px;
-  color: #999;
-}
-
-.kb-editor-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: #fff;
+.kb-doc-card {
+  background: white;
   border-radius: 8px;
-  padding: 16px 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
-.kb-editor-panel.fullscreen {
-  position: fixed;
-  inset: 16px;
-  z-index: 2000;
-  background-color: #fff;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+.kb-doc-card:hover {
+  border-color: #18a058;
+  box-shadow: 0 4px 12px rgba(24, 160, 88, 0.12);
+  transform: translateY(-2px);
 }
 
-.kb-editor-header {
+.kb-doc-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.kb-doc-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+  margin-right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.kb-doc-card-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 8px;
 }
 
-.kb-editor-header :deep(.n-input) {
-  font-size: 24px;
-  font-weight: 600;
-  border: none;
-  box-shadow: none;
-  padding-left: 0;
-}
-
-.kb-editor-tags {
-  margin-bottom: 12px;
-}
-
-.kb-editor-toolbar {
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-  background-color: #f7f7f7;
-  margin-bottom: 12px;
-}
-
-.kb-toolbar-button {
-  padding: 2px 6px;
+.kb-doc-tags {
+  color: #666;
+  background: #f5f5f5;
+  padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid transparent;
-  font-size: 13px;
-  color: #555;
 }
 
-.kb-toolbar-button.active {
-  border-color: #18a058;
-  color: #18a058;
-  background-color: #e6f6ec;
-}
-
-.kb-editor-content {
-  flex: 1;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 12px;
-  overflow: auto;
-}
-
-.kb-editor-content :deep(.ProseMirror) {
-  outline: none;
-  min-height: 300px;
+.kb-doc-card-time {
+  font-size: 12px;
+  color: #bbb;
 }
 </style>
