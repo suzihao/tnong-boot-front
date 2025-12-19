@@ -3,25 +3,21 @@
     <template #header>
       <div class="user-card-header">
         <div class="user-card-title">
-          <n-icon size="18" style="margin-right: 8px"><people-outline /></n-icon>
           <div>
             <div class="user-card-title-main">用户管理</div>
             <div class="user-card-title-sub">管理系统中的用户信息与权限</div>
           </div>
         </div>
-        <n-space :size="8">
-          <n-button tertiary size="small" @click="handleQuery">
-            <template #icon><n-icon><refresh-outline /></n-icon></template>
-            刷新
-          </n-button>
-          <n-button type="primary" size="small" @click="handleAdd">
+        <n-space :size="12" align="center">
+          <div class="user-card-meta">共 {{ pagination.itemCount }} 个用户</div>
+          <n-button v-perm="'user:create'" type="primary" size="small" @click="handleAdd">
             <template #icon><n-icon><add-outline /></n-icon></template>
             新增用户
           </n-button>
         </n-space>
       </div>
     </template>
-
+    
     <!-- 搜索栏 -->
     <div class="user-toolbar">
       <n-space :size="12" wrap>
@@ -66,7 +62,7 @@
       :pagination="pagination"
       :bordered="false"
       :single-line="false"
-      :striped="true"
+      :striped="false"
       size="small"
       @update:page="handlePageChange"
       @update:page-size="handlePageSizeChange"
@@ -120,6 +116,31 @@
         </n-form-item>
       </n-form>
     </n-modal>
+
+    <!-- 分配角色抽屉 -->
+    <n-drawer v-model:show="showRoleDrawer" :width="420" placement="right">
+      <n-drawer-content :title="`为【${currentUser.nickname || currentUser.username}】分配角色`">
+        <n-alert type="info" :show-icon="false" style="margin-bottom: 16px">
+          已选中 {{ checkedRoleIds.length }} 个角色，可以取消勾选来移除角色
+        </n-alert>
+        <n-checkbox-group v-model:value="checkedRoleIds">
+          <n-space vertical>
+            <n-checkbox v-for="role in roleList" :key="role.id" :value="role.id" :label="role.name">
+              <div style="display: flex; align-items: center; gap: 8px">
+                <span>{{ role.name }}</span>
+                <n-tag size="tiny" type="info">{{ role.code }}</n-tag>
+              </div>
+            </n-checkbox>
+          </n-space>
+        </n-checkbox-group>
+        <template #footer>
+          <n-space justify="end">
+            <n-button @click="showRoleDrawer = false">取消</n-button>
+            <n-button type="primary" @click="handleSaveUserRoles" :loading="savingRole">保存</n-button>
+          </n-space>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </n-card>
 </template>
 
@@ -139,10 +160,16 @@ import {
   NSwitch,
   NTag,
   NPopconfirm,
-  NAvatar
+  NAvatar,
+  NDrawer,
+  NDrawerContent,
+  NCheckboxGroup,
+  NCheckbox,
+  NAlert
 } from 'naive-ui'
 import { SearchOutline, RefreshOutline, AddOutline, CreateOutline, TrashOutline, PeopleOutline } from '@vicons/ionicons5'
-import { getUserPage, getUserById, createUser, updateUser, deleteUser } from '@/api/user'
+import { getUserPage, getUserById, createUser, updateUser, deleteUser, getUserRoles, assignUserRoles } from '@/api/user'
+import { getRoleList } from '@/api/role'
 
 const message = useMessage()
 
@@ -150,6 +177,11 @@ const loading = ref(false)
 const showModal = ref(false)
 const modalTitle = ref('新增用户')
 const formRef = ref(null)
+const showRoleDrawer = ref(false)
+const savingRole = ref(false)
+const roleList = ref([])
+const checkedRoleIds = ref([])
+const currentUser = ref({})
 
 const queryParams = reactive({
   username: '',
@@ -170,6 +202,7 @@ const pagination = reactive({
 
 const formData = reactive({
   id: null,
+  userId: '',
   username: '',
   password: '',
   nickname: '',
@@ -187,7 +220,7 @@ const rules = {
 }
 
 const columns = [
-  { title: 'ID', key: 'id', width: 80 },
+  { title: '用户ID', key: 'userId', width: 140 },
   {
     title: '头像',
     key: 'avatar',
@@ -218,7 +251,7 @@ const columns = [
   {
     title: '操作',
     key: 'actions',
-    width: 150,
+    width: 200,
     fixed: 'right',
     render: (row) => {
       return h(NSpace, {}, {
@@ -229,6 +262,12 @@ const columns = [
             text: true,
             onClick: () => handleEdit(row)
           }, { default: () => '编辑', icon: () => h(NIcon, {}, { default: () => h(CreateOutline) }) }),
+          h(NButton, {
+            size: 'small',
+            type: 'info',
+            text: true,
+            onClick: () => handleAssignRole(row)
+          }, { default: () => '分配角色', icon: () => h(NIcon, {}, { default: () => h(PeopleOutline) }) }),
           h(NPopconfirm, {
             onPositiveClick: () => handleDelete(row)
           }, {
@@ -307,7 +346,7 @@ const handleAdd = () => {
 const handleEdit = async (row) => {
   modalTitle.value = '编辑用户'
   try {
-    const res = await getUserById(row.id)
+    const res = await getUserById(row.userId)
     if (res.code === 200) {
       Object.assign(formData, res.data)
       showModal.value = true
@@ -317,11 +356,55 @@ const handleEdit = async (row) => {
   }
 }
 
+const handleAssignRole = async (row) => {
+  currentUser.value = row
+  showRoleDrawer.value = true
+  await Promise.all([fetchRoleList(), fetchUserRoles(row.userId)])
+}
+
+async function fetchRoleList() {
+  try {
+    const res = await getRoleList()
+    if (res.code === 200) {
+      roleList.value = res.data || []
+    }
+  } catch (error) {
+    message.error('获取角色列表失败')
+  }
+}
+
+async function fetchUserRoles(userId) {
+  try {
+    const res = await getUserRoles(userId)
+    if (res.code === 200) {
+      checkedRoleIds.value = res.data || []
+    }
+  } catch (error) {
+    message.error('获取用户角色失败')
+  }
+}
+
+async function handleSaveUserRoles() {
+  if (!currentUser.value.userId) return
+  savingRole.value = true
+  try {
+    const res = await assignUserRoles(currentUser.value.userId, checkedRoleIds.value)
+    if (res.code === 200) {
+      message.success('分配角色成功')
+      showRoleDrawer.value = false
+    }
+  } catch (error) {
+    message.error('分配角色失败')
+  } finally {
+    savingRole.value = false
+  }
+}
+
 const handleSubmit = async () => {
   try {
     await formRef.value?.validate()
     
-    if (formData.id) {
+    if (formData.userId) {
       await updateUser(formData)
       message.success('更新成功')
     } else {
@@ -339,7 +422,7 @@ const handleSubmit = async () => {
 
 const handleDelete = async (row) => {
   try {
-    await deleteUser(row.id, row.version)
+    await deleteUser(row.userId, row.version)
     message.success('删除成功')
     getList()
   } catch (error) {
@@ -351,3 +434,57 @@ onMounted(() => {
   getList()
 })
 </script>
+
+<style scoped>
+.user-card {
+  padding: 0;
+}
+
+.user-card :deep(.n-card__content) {
+  padding: 0 16px 16px;
+}
+
+.user-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+}
+
+.user-card-title {
+  display: flex;
+  align-items: center;
+}
+
+.user-card-title-main {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.user-card-title-sub {
+  font-size: 12px;
+  color: #999;
+}
+
+.user-toolbar {
+  padding: 0 0 12px;
+}
+
+.user-table :deep(.n-data-table-th__title) {
+  font-size: 13px;
+  color: #666;
+}
+
+.user-table :deep(.n-data-table-td) {
+  font-size: 13px;
+}
+
+.user-table :deep(.n-data-table-tr:hover) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.user-table :deep(.n-data-table-th),
+.user-table :deep(.n-data-table-td) {
+  border-right: none !important;
+}
+</style>

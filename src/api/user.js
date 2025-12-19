@@ -34,3 +34,17 @@ export const updateUser = (data) => {
 export const deleteUser = (id, version) => {
   return request.delete(`/system/user/${id}`, { params: { version } })
 }
+
+/**
+ * 获取用户已分配的角色ID列表
+ */
+export const getUserRoles = (userId) => {
+  return request.get(`/system/user/${userId}/role-ids`)
+}
+
+/**
+ * 为用户分配角色
+ */
+export const assignUserRoles = (userId, roleIds) => {
+  return request.post(`/system/user/${userId}/role-ids`, roleIds)
+}

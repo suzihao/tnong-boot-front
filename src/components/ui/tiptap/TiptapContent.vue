@@ -73,7 +73,7 @@ onMounted(() => {
     <div
       v-if="isEditorReady"
       ref="editorElement"
-      class="prose prose-sm sm:prose lg:prose-lg xl:prose-xl dark:prose-invert h-full w-full focus:outline-none max-w-none px-4 py-6"
+      class="prose prose-sm sm:prose lg:prose-lg xl:prose-xl h-full w-full focus:outline-none max-w-none px-4 py-6"
       role="region"
     />
 

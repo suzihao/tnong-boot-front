@@ -46,6 +46,18 @@ const routes = [
         meta: { title: '租户管理' }
       },
       {
+        path: 'role',
+        name: 'Role',
+        component: () => import('@/views/system/Role.vue'),
+        meta: { title: '角色管理' }
+      },
+      {
+        path: 'menu',
+        name: 'Menu',
+        component: () => import('@/views/system/Menu.vue'),
+        meta: { title: '菜单管理' }
+      },
+      {
         path: 'knowledge',
         name: 'Knowledge',
         component: () => import('@/views/knowledge/Index.vue'),

@@ -5,26 +5,29 @@
         <!-- 顶部操作栏 -->
         <div class="kb-editor-topbar">
           <div class="kb-editor-topbar-left">
-            <n-button text @click="handleBack">
+            <n-button text @click="handleBack" class="kb-editor-back">
               <template #icon>
                 <n-icon><arrow-back-outline /></n-icon>
               </template>
-              返回列表
+              返回知识库
             </n-button>
           </div>
           <div class="kb-editor-topbar-right">
-            <n-space>
-              <n-switch v-model:value="form.status" :checked-value="1" :unchecked-value="0">
+            <div class="kb-editor-status">
+              <span class="kb-editor-status-label">文档状态</span>
+              <n-switch v-model:value="form.status" :checked-value="1" :unchecked-value="0" size="small">
                 <template #checked>已发布</template>
                 <template #unchecked>草稿</template>
               </n-switch>
+            </div>
+            <div class="kb-editor-actions">
               <n-button @click="handleSave" type="primary" :loading="saving">
                 保存
               </n-button>
               <n-button @click="handleDelete" type="error" secondary v-if="documentId">
                 删除
               </n-button>
-            </n-space>
+            </div>
           </div>
         </div>
 
@@ -211,8 +214,15 @@ onBeforeUnmount(() => {
 .kb-editor-page {
   height: 100vh;
   background: #fff;
+  color: #111827;
   display: flex;
   flex-direction: column;
+}
+
+.kb-editor-page :deep(.tiptap-editor),
+.kb-editor-page :deep(.tiptap-toolbar),
+.kb-editor-page :deep(.ProseMirror) {
+  color: #111827;
 }
 
 .kb-editor-wrapper {
@@ -226,6 +236,9 @@ onBeforeUnmount(() => {
 }
 
 .kb-editor-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -233,7 +246,33 @@ onBeforeUnmount(() => {
   padding: 12px 16px;
   background: #fff;
   border-radius: 10px;
+  border: 1px solid #f0f0f0;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(8px);
+}
+
+.kb-editor-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.kb-editor-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.kb-editor-status-label {
+  font-weight: 500;
+}
+
+.kb-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .kb-editor-topbar-left {
@@ -241,11 +280,42 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
+.kb-editor-back :deep(.n-button__content),
+.kb-editor-back :deep(.n-button__icon),
+.kb-editor-back :deep(.n-icon) {
+  color: #111827;
+}
+
+.kb-editor-back :deep(.n-icon) {
+  font-size: 18px;
+}
+
+.kb-editor-page :deep(.tiptap-status-bar) {
+  color: #6b7280;
+}
+
+.kb-editor-page :deep(.tiptap-status-bar [data-slot="badge"]) {
+  background-color: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #111827;
+}
+
+.kb-editor-page :deep(.tiptap-toolbar .bg-accent) {
+  background-color: #e0e7ff !important;
+  color: #1d4ed8 !important;
+}
+
+.kb-editor-page :deep(.tiptap-toolbar [data-slot="button"].bg-accent svg) {
+  color: inherit;
+}
+
 .kb-editor-title {
   margin-bottom: 8px;
   padding: 0 16px;
-  background: white;
-  border-radius: 8px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
 .kb-editor-title :deep(.n-input) {
@@ -257,17 +327,24 @@ onBeforeUnmount(() => {
 .kb-editor-title :deep(.n-input__input-el) {
   font-size: 32px;
   font-weight: 600;
+  color: #111827;
 }
 
 .kb-editor-tags {
   margin-bottom: 16px;
   padding: 0 16px;
-  background: white;
-  border-radius: 8px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
 .kb-editor-tags :deep(.n-input) {
   padding: 8px 0;
+}
+
+.kb-editor-tags :deep(.n-input__input-el) {
+  color: #111827;
 }
 
 .kb-editor-body {

@@ -2,9 +2,11 @@
   <n-config-provider :theme="isDark ? darkTheme : null" :theme-overrides="themeOverrides">
     <n-message-provider>
       <n-dialog-provider>
-        <transition name="page-fade" mode="out-in">
-          <router-view />
-        </transition>
+        <router-view v-slot="{ Component }">
+          <transition name="page-fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </n-dialog-provider>
     </n-message-provider>
   </n-config-provider>
@@ -47,7 +49,6 @@ html.dark .n-layout-header {
 }
 
 html.dark .kb-container,
-html.dark .kb-editor-page,
 html.dark .kb-doc-card {
   background-color: #18181c;
   border-color: #2f2f33;

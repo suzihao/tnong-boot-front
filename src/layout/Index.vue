@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, computed, h } from 'vue'
+import { ref, computed, h, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NIcon, useDialog } from 'naive-ui'
 import {
@@ -102,7 +102,9 @@ import {
   LogOutOutline,
   SunnyOutline,
   MoonOutline,
-  ColorPaletteOutline
+  ColorPaletteOutline,
+  FolderOutline,
+  DocumentOutline
 } from '@vicons/ionicons5'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
@@ -135,35 +137,62 @@ function renderIcon(icon) {
   return () => h(NIcon, null, { default: () => h(icon) })
 }
 
-const menuOptions = [
-  {
-    label: '首页',
-    key: '/dashboard',
-    icon: renderIcon(HomeOutline)
-  },
-  {
-    label: '知识库',
-    key: '/knowledge',
-    icon: renderIcon(DocumentTextOutline)
-  },
-  {
-    label: '系统管理',
-    key: 'system',
-    icon: renderIcon(SettingsOutline),
-    children: [
-      {
-        label: '用户管理',
-        key: '/user',
-        icon: renderIcon(PeopleOutline)
-      },
-      {
-        label: '租户管理',
-        key: '/tenant',
-        icon: renderIcon(BusinessOutline)
+// 默认图标映射
+const iconMap = {
+  'home': HomeOutline,
+  'document-text': DocumentTextOutline,
+  'settings': SettingsOutline,
+  'people': PeopleOutline,
+  'business': BusinessOutline,
+  'folder': FolderOutline,
+  'document': DocumentOutline
+}
+
+// 将后端菜单转换为Naive UI菜单格式
+function transformMenus(menus) {
+  if (!menus || menus.length === 0) return []
+  
+  return menus
+    .filter(menu => menu.type !== 3) // 过滤掉按钮类型（type=3）
+    .map(menu => {
+      const option = {
+        label: menu.name,
+        key: menu.path || menu.id.toString()
       }
-    ]
-  }
-]
+      
+      // 设置图标
+      if (menu.icon && iconMap[menu.icon]) {
+        option.icon = renderIcon(iconMap[menu.icon])
+      }
+      
+      // 递归处理子菜单（同样过滤按钮）
+      if (menu.children && menu.children.length > 0) {
+        const filteredChildren = transformMenus(menu.children)
+        if (filteredChildren.length > 0) {
+          option.children = filteredChildren
+        }
+      }
+      
+      return option
+    })
+}
+
+// 动态菜单
+const menuOptions = computed(() => {
+  // 首页总是显示
+  const defaultMenu = [
+    {
+      label: '首页',
+      key: '/dashboard',
+      icon: renderIcon(HomeOutline)
+    }
+  ]
+  
+  // 添加后端返回的菜单
+  const backendMenus = transformMenus(userStore.menus)
+  
+  return [...defaultMenu, ...backendMenus]
+})
 
 const userOptions = [
   {
@@ -195,6 +224,13 @@ const handleCommand = (key) => {
     })
   }
 }
+
+// 加载菜单数据
+onMounted(async () => {
+  if (!userStore.menus || userStore.menus.length === 0) {
+    await userStore.fetchMenusAndPerms()
+  }
+})
 </script>
 
 <style scoped>
