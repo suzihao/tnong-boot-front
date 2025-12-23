@@ -63,10 +63,10 @@ const handleUserPanelClick = () => {
       >
         <div class="flex flex-col gap-y-px overflow-hidden">
           <span class="truncate text-sm">
-            {{ user.name }}
+            {{ user.nickname || user.username }}
           </span>
           <span class="truncate text-xs text-neutral-450 dark:text-neutral-500">
-            这里应该写点什么
+            {{ user.username }}
           </span>
         </div>
 

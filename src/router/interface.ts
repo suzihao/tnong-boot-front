@@ -1,4 +1,4 @@
-import type {
+asimport type {
   MenuDividerOption as MenuDividerOptionRaw,
   MenuOption as MenuOptionRaw,
   MenuGroupOption as MenuGroupOptionRaw,

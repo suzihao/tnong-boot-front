@@ -59,23 +59,22 @@ export function resolveMenu(options: MenuMixedOptions[], parentDisabled = false)
 export function resolveRoute(options: MenuMixedOptions[]) {
   const modules = import.meta.glob('@/views/**/*.vue')
 
+  console.log('resolveRoute - 可用的模块:', Object.keys(modules))
+
   const routeOptions: RouteRecordRaw[] = []
 
-  function flattenOptions(options: MenuMixedOptions[]): MenuMixedOptions[] {
-    return options.flatMap((item) => {
-      if (item.type === 'divider') {
-        return []
-      }
+  options.forEach((item) => {
+    // 跳过分隔符和分组类型
+    if (item.type === 'divider') {
+      return
+    }
 
-      if (item.type === 'group' && Array.isArray(item.children) && !isEmpty(item.children)) {
-        return flattenOptions(item.children)
-      }
+    // 如果是分组类型，递归处理子项
+    if (item.type === 'group' && Array.isArray(item.children) && !isEmpty(item.children)) {
+      routeOptions.push(...resolveRoute(item.children))
+      return
+    }
 
-      return [item]
-    })
-  }
-
-  flattenOptions(options).forEach((item) => {
     const { label, icon, meta, component, children, disabled, ...rest } = item as MenuOption
 
     if (!disabled) {
@@ -83,9 +82,25 @@ export function resolveRoute(options: MenuMixedOptions[]) {
 
       if (!isEmpty(component) && isString(component)) {
         const extractName = component.replace(/^\/|\.vue$/g, '')
-        const modulePath = `/src/views/${extractName}.vue`
-        if (modules[modulePath]) {
-          componentModule = modules[modulePath]
+
+        // 尝试多种路径格式
+        const possiblePaths = [
+          `/src/views/${extractName}.vue`,           // system/user.vue
+          `/src/views/${extractName}/index.vue`,     // system/user/index.vue
+        ]
+
+        console.log('resolveRoute - 查找组件:', { component, extractName, possiblePaths })
+
+        for (const modulePath of possiblePaths) {
+          if (modules[modulePath]) {
+            componentModule = modules[modulePath]
+            console.log('resolveRoute - 找到组件:', modulePath)
+            break
+          }
+        }
+
+        if (!componentModule) {
+          console.warn('resolveRoute - 组件不存在，尝试的路径:', possiblePaths)
         }
       }
 
@@ -102,9 +117,12 @@ export function resolveRoute(options: MenuMixedOptions[]) {
         ['type', 'label', 'icon', 'disabled', 'extra', 'props', 'show', 'key'],
       ) as RouteRecordRaw
 
+      // 递归处理子路由
       if (Array.isArray(children) && !isEmpty(children)) {
         route.children = resolveRoute(children)
       }
+
+      console.log('resolveRoute - 生成路由:', { name: route.name, path: route.path, hasComponent: !!route.component, hasChildren: !!route.children?.length })
 
       routeOptions.push(route)
     }

@@ -16,8 +16,10 @@ export default defineConfig((env) => {
       },
     },
     server: {
-      port: 5799,
+      port: 999,
       host: true,
+      strictPort: true, // 如果端口被占用则报错，而不是自动切换
+      allowedHosts: ['report.tnong.com', '192.168.1.100'],
     },
     build: {
       rollupOptions: {
