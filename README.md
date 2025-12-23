@@ -1,132 +1,104 @@
-<div align="center">
+# TNong Boot 前端项目
 
-# Lithe Admin
+基于 Vue3 + Vite + Element Plus 的后台管理系统前端
 
-![Vue](https://img.shields.io/badge/Vue-3.5.24-42B883?style=for-the-badge&logo=vue.js)
-![Naive UI](https://img.shields.io/badge/Naive_UI-2.43.2-75B93F?style=for-the-badge&logo=naiveui)
-![Vite](https://img.shields.io/badge/Vite-7.2.7-646cff?style=for-the-badge&logo=vite)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1.17-4ABAFB?style=for-the-badge&logo=tailwindcss)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-4377C1?style=for-the-badge&logo=typescript)
+## 技术栈
 
-[预览地址(国内)](https://lithe-admin.havenovelgod.com) | [预览地址](https://lithe-admin.vercel.app)
+- **Vue 3** - 渐进式 JavaScript 框架
+- **Vite** - 下一代前端构建工具
+- **Element Plus** - Vue 3 UI 组件库
+- **Vue Router** - 官方路由管理器
+- **Pinia** - Vue 状态管理
+- **Axios** - HTTP 客户端
 
-[English](https://github.com/tenianon/lithe-admin/blob/main/README.en_US.md) | 简体中文
+## 功能特性
 
-</div>
+- ✅ 用户登录认证
+- ✅ JWT Token 管理
+- ✅ 路由守卫
+- ✅ 请求拦截器
+- ✅ 响应拦截器
+- ✅ 用户管理
+- ✅ 租户管理
+- ✅ 统一布局
+- ✅ 面包屑导航
 
-## 📃 简介
+## 快速开始
 
-**Lithe Admin** 是一个轻盈而优雅的后台管理模板，基于 **`Vue3`** **`Naive UI`** **`Vite7`** **`TailwindCSS4`** **`TypeScript`** **`Pinia`** 构建，沿用折纸般的页面结构设计，轻量的业务依赖和低耦合代码配置，专为灵活拓展和个性化定制而打造，适用于快速搭建和渐进式迭代的后台管理系统
-
-## ✨ 特性
-
-- 🎨 **现代化设计** - 基于 Tailwind Color 配色方案，采用磨砂质感和纹理效果，​​提升视觉层次与主题表现力
-- 🧩 **灵活主题定制** - 支持自定义颜色、主题、组件样式
-- 🧭 **交互反馈效果** - 韵滑的过渡效果，交互体验更自然流畅
-- 📱 **移动端响应式** - 还不错的响应式支持
-- 📝 **代码规范** - 通过 ESLint 规范代码质量，Prettier 格式化代码风格
-- 🎯 **TypeScript** - 完整的 TypeScript 支持，更好的类型提示与开发体验
-- ⚡ **Vite** - 快速的开发服务器和构建工具
-
-## 🚀 快速开始
-
-### 环境要求
-
-- **Node.js**: `^20.19.0` 或 `>=22.12.0`
-- **包管理器**: `pnpm` (推荐) 或 `npm` 或 `yarn`
-
-### 创建项目
+### 1. 安装依赖
 
 ```bash
-# 使用 pnpm 创建项目(推荐)
-pnpm create lithe@latest
-
-# 或使用 npm 创建项目
-npm create lithe@latest
-
-# 或使用 yarn 创建项目
-yarn create lithe@latest
-```
-
-### 安装依赖
-
-```bash
-# 使用 pnpm (推荐)
-pnpm install
-
-# 或使用 npm
 npm install
-
-# 或使用 yarn
-yarn install
 ```
 
-### 开发模式
+### 2. 启动开发服务器
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
-### 单元测试
+访问：http://localhost:3000
+
+### 3. 构建生产版本
 
 ```bash
-pnpm test:unit
+npm run build
 ```
 
-### 构建生产版本
+### 4. 预览生产构建
 
 ```bash
-pnpm build
+npm run preview
 ```
 
-### 预览生产版本
+## 默认账号
 
-```bash
-pnpm preview
+- 用户名：admin
+- 密码：123456
+- 租户编码：DEFAULT
+
+## 目录结构
+
+```
+src/
+├── api/              # API 接口
+├── assets/           # 静态资源
+├── components/       # 公共组件
+├── layout/           # 布局组件
+├── router/           # 路由配置
+├── stores/           # 状态管理
+├── utils/            # 工具函数
+├── views/            # 页面视图
+├── App.vue           # 根组件
+└── main.js           # 入口文件
 ```
 
-### 代码检查
+## 配置说明
 
-```bash
-# 检查类型
-pnpm type-check
+### API 代理
 
-# 检查代码质量
-pnpm lint:check
+在 `vite.config.js` 中配置了 API 代理，所有 `/api` 请求会被代理到 `http://localhost:8080`
 
-# 自动修复代码问题
-pnpm lint:fix
+### 请求拦截
 
-# 检查代码格式
-pnpm format:check
+- 自动添加 Authorization 请求头
+- Token 过期自动跳转登录页
+- 统一错误提示
 
-# 自动格式化代码
-pnpm format:fix
-```
+## 开发规范
 
-## 📦 图标
+1. 使用 Composition API
+2. 使用 `<script setup>` 语法
+3. 组件使用 PascalCase 命名
+4. 使用 ES6+ 语法
+5. 遵循 Vue 3 最佳实践
 
-图标库使用 [Iconify](https://iconify.design)，使用方式如下：
+## 注意事项
 
-```html
-<!-- 使用 ph 前缀 -->
-<span class="iconify ph--x"></span>
+1. 确保后端服务已启动（默认 8080 端口）
+2. 登录后 Token 会保存在 localStorage
+3. 页面刷新会自动恢复登录状态
 
-<!-- 直接使用 -->
-<span class="icon-[fluent--data-area-32-regular]"></span>
-```
+---
 
-上面的 `ph` 前缀需要在 `src/assets/base.css` 中进行配置，详细文档请参考 [Iconify Tailwind 4](https://iconify.design/docs/usage/css/tailwind/tailwind4)
-
-```css
-@plugin '@iconify/tailwind4' {
-  prefixes: ph;
-  scale: 1.2;
-}
-```
-
-## 🗺️ 交流群
-
-添加好友后，邀请加入交流群
-
-<img src="https://i.postimg.cc/ZqJzxp5x/mmqrcode1764759869585.png" width="200"/>
+更新时间：2025-12-13
