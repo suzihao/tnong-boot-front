@@ -369,13 +369,12 @@ onMounted(() => {
       <NDrawer v-model:show="showPermDrawer" :width="420" placement="right">
         <NDrawerContent title="分配菜单权限">
           <NAlert type="info" :show-icon="false" style="margin-bottom: 16px">
-            已选中 {{ checkedMenuIds.length }} 个菜单/按钮，可以取消勾选来移除权限
+            已选中 {{ checkedMenuIds.length }} 个菜单/按钮
           </NAlert>
           <NTree
             block-line
             checkable
             cascade
-            check-strategy="all"
             :data="menuTree"
             :checked-keys="checkedMenuIds"
             key-field="key"
