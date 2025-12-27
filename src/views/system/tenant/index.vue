@@ -46,7 +46,7 @@ const formRef = ref<FormInst | null>(null)
 const queryFormRef = ref<FormInst | null>(null)
 
 const queryParams = reactive<Omit<TenantPageParams, 'page' | 'size'>>({
-  tenantId: undefined,
+  tenantCode: undefined,
   name: '',
 })
 
@@ -70,7 +70,7 @@ const pagination = reactive<PaginationProps>({
 })
 
 const formData = reactive<TenantForm>({
-  tenantId: undefined,
+  tenantCode: undefined,
   name: '',
   contactName: '',
   contactPhone: '',
@@ -81,13 +81,13 @@ const formData = reactive<TenantForm>({
 })
 
 const rules: FormRules = {
-  tenantId: { required: true, message: '请输入租户ID', trigger: 'blur', type: 'number' },
+  tenantCode: { required: true, message: '请输入租户编码', trigger: 'blur', type: 'number' },
   name: { required: true, message: '请输入租户名称', trigger: 'blur' },
 }
 
 const columns: DataTableColumns<Tenant> = [
   { title: 'ID', key: 'id', width: 80 },
-  { title: '租户ID', key: 'tenantId', width: 150 },
+  { title: '租户编码', key: 'tenantCode', width: 150 },
   { title: '租户名称', key: 'name', width: 150 },
   { title: '联系人', key: 'contactName', width: 100 },
   { title: '联系电话', key: 'contactPhone', width: 130 },
@@ -162,7 +162,7 @@ const handleQuery = () => {
 }
 
 const handleReset = () => {
-  queryParams.tenantId = undefined
+  queryParams.tenantCode = undefined
   queryParams.name = ''
   handleQuery()
 }
@@ -171,7 +171,7 @@ const handleAdd = () => {
   modalTitle.value = '新增租户'
   Object.assign(formData, {
     id: undefined,
-    tenantId: undefined,
+    tenantCode: undefined,
     name: '',
     contactName: '',
     contactPhone: '',
@@ -250,10 +250,10 @@ onMounted(() => {
           :inline="true"
           label-placement="left"
         >
-          <NFormItem label="租户ID">
+          <NFormItem label="租户编码">
             <NInputNumber
-              v-model:value="queryParams.tenantId"
-              placeholder="租户ID"
+              v-model:value="queryParams.tenantCode"
+              placeholder="租户编码"
               clearable
               :show-button="false"
             />
@@ -322,11 +322,11 @@ onMounted(() => {
           label-width="100"
           style="margin-top: 20px"
         >
-          <NFormItem label="租户ID" path="tenantId">
+          <NFormItem label="租户编码" path="tenantCode">
             <NInputNumber
-              v-model:value="formData.tenantId"
+              v-model:value="formData.tenantCode"
               :disabled="!!formData.id"
-              placeholder="请输入租户ID"
+              placeholder="请输入租户编码"
               :show-button="false"
               style="width: 100%"
             />

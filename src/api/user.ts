@@ -4,7 +4,7 @@ import type { ApiResponse } from '@/utils/request'
 // 用户信息
 export interface User {
   id?: number
-  userId?: string
+  userCode?: string
   username: string
   nickname: string
   mobile?: string

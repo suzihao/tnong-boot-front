@@ -21,7 +21,7 @@ export interface Tenant {
 export interface TenantPageParams {
   page: number
   size: number
-  tenantId?: number
+  tenantCode?: number
   name?: string
 }
 

@@ -103,7 +103,7 @@ const rules: FormRules = {
 }
 
 const columns: DataTableColumns<User> = [
-  { title: '用户ID', key: 'userId', width: 140 },
+  { title: '用户编码', key: 'userCode', width: 140 },
   {
     title: '头像',
     key: 'avatar',
@@ -222,7 +222,7 @@ const handleAdd = () => {
 const handleEdit = async (row: User) => {
   modalTitle.value = '编辑用户'
   try {
-    const res = await getUserById(row.userId!)
+    const res = await getUserById(row.id!)
     if (res.code === 200) {
       Object.assign(formData, res.data)
       showModal.value = true
@@ -235,7 +235,7 @@ const handleEdit = async (row: User) => {
 const handleAssignRole = async (row: User) => {
   currentUser.value = row
   showRoleDrawer.value = true
-  await Promise.all([fetchRoleList(), fetchUserRoles(row.userId!)])
+  await Promise.all([fetchRoleList(), fetchUserRoles(row.id!)])
 }
 
 async function fetchRoleList() {
@@ -249,9 +249,9 @@ async function fetchRoleList() {
   }
 }
 
-async function fetchUserRoles(userId: string) {
+async function fetchUserRoles(id: string) {
   try {
-    const res = await getUserRoles(userId)
+    const res = await getUserRoles(id)
     if (res.code === 200) {
       checkedRoleIds.value = res.data || []
     }
@@ -261,10 +261,10 @@ async function fetchUserRoles(userId: string) {
 }
 
 async function handleSaveUserRoles() {
-  if (!currentUser.value.userId) return
+  if (!currentUser.value.id) return
   savingRole.value = true
   try {
-    const res = await assignUserRoles(currentUser.value.userId, checkedRoleIds.value)
+    const res = await assignUserRoles(currentUser.value.id, checkedRoleIds.value)
     if (res.code === 200) {
       message.success('分配角色成功')
       showRoleDrawer.value = false
@@ -280,7 +280,7 @@ const handleSubmit = async () => {
   try {
     await formRef.value?.validate()
 
-    if (formData.userId) {
+    if (formData.id) {
       await updateUser(formData)
       message.success('更新成功')
     } else {
@@ -298,7 +298,7 @@ const handleSubmit = async () => {
 
 const handleDelete = async (row: User) => {
   try {
-    await deleteUser(row.userId!, row.version!)
+    await deleteUser(row.id!, row.version!)
     message.success('删除成功')
     getList()
   } catch (error) {
