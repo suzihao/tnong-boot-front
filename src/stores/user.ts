@@ -34,7 +34,6 @@ export const useUserStore = defineStore('userStore', () => {
   async function login(form: LoginForm) {
     try {
       const res = await loginApi(form)
-      debugger
       if (res.code === 200) {
         const data: LoginResponse = res.data
         token.value = data.token

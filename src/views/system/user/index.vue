@@ -184,7 +184,11 @@ const getList = async () => {
       pagination.itemCount = res.data.total
     }
   } catch (error) {
-    message.error('查询失败')
+    if (error instanceof Error) {
+      message.error(error.message); // 安全访问 message
+    } else {
+      message.error('查询失败：未知错误');
+    }
   } finally {
     loading.value = false
   }

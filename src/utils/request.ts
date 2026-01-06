@@ -48,6 +48,11 @@ service.interceptors.response.use(
         userStore.cleanup('/sign-in')
       }
 
+      // 403: 无权限访问
+      if (res.code === 403) {
+        return Promise.reject(new Error(res.message || '无权限访问'))
+      }
+
       return Promise.reject(new Error(res.message || '请求失败'))
     }
 

@@ -25,7 +25,7 @@ import {
 } from 'naive-ui'
 import { ref, reactive, h, onMounted, computed } from 'vue'
 
-import { ScrollContainer } from '@/components'
+import { getMenuTree, type MenuItem } from '@/api/menu'
 import {
   getRoleList,
   createRole,
@@ -35,7 +35,7 @@ import {
   assignRoleMenus,
   type Role,
 } from '@/api/role'
-import { getMenuTree, type MenuItem } from '@/api/menu'
+import { ScrollContainer } from '@/components'
 
 defineOptions({
   name: 'SystemRole',
