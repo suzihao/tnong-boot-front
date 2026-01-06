@@ -4,13 +4,13 @@ import { ref } from 'vue'
 
 import { login as loginApi, logout as logoutApi, wecomCallback as wecomCallbackApi } from '@/api/auth'
 import { getMyMenusAndPerms } from '@/api/menu'
-import type { LoginForm, LoginResponse } from '@/api/auth'
-import type { MenuItem } from '@/api/menu'
 import router from '@/router'
 import { resolveMenu, resolveRoute } from '@/router/helper'
 
 import { pinia } from '.'
 
+import type { LoginForm, LoginResponse } from '@/api/auth'
+import type { MenuItem } from '@/api/menu'
 import type { MenuMixedOptions } from '@/router/interface'
 import type { MenuOption } from 'naive-ui'
 import type { RouteRecordRaw } from 'vue-router'
@@ -34,6 +34,7 @@ export const useUserStore = defineStore('userStore', () => {
   async function login(form: LoginForm) {
     try {
       const res = await loginApi(form)
+      debugger
       if (res.code === 200) {
         const data: LoginResponse = res.data
         token.value = data.token

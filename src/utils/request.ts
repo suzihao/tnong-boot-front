@@ -1,7 +1,8 @@
 import axios from 'axios'
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+
 import { useUserStore } from '@/stores/user'
-import router from '@/router'
+
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 
 // 响应数据结构
 export interface ApiResponse<T = any> {
