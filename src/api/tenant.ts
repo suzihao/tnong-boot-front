@@ -86,8 +86,8 @@ export function createTenant(data: TenantForm) {
  */
 export function updateTenant(data: TenantForm) {
   return request<ApiResponse<Tenant>>({
-    url: '/system/tenant',
-    method: 'put',
+    url: '/system/tenant/update',
+    method: 'post',
     data,
   })
 }
@@ -97,8 +97,8 @@ export function updateTenant(data: TenantForm) {
  */
 export function deleteTenant(id: number, version: number) {
   return request<ApiResponse<void>>({
-    url: `/system/tenant/${id}`,
-    method: 'delete',
-    params: { version },
+    url: '/system/tenant/delete',
+    method: 'post',
+    data: { id, version },
   })
 }

@@ -43,8 +43,8 @@ export function createRole(data: Partial<Role>) {
  */
 export function updateRole(data: Partial<Role>) {
   return request<ApiResponse<Role>>({
-    url: '/system/role',
-    method: 'put',
+    url: '/system/role/update',
+    method: 'post',
     data,
   })
 }
@@ -54,9 +54,9 @@ export function updateRole(data: Partial<Role>) {
  */
 export function deleteRole(id: number, version: number) {
   return request<ApiResponse<void>>({
-    url: `/system/role/${id}`,
-    method: 'delete',
-    params: { version },
+    url: '/system/role/delete',
+    method: 'post',
+    data: { id, version },
   })
 }
 

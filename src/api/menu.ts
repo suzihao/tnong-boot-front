@@ -71,8 +71,8 @@ export function createMenu(data: MenuForm) {
 // 更新菜单
 export function updateMenu(data: MenuForm) {
   return request<ApiResponse<MenuItem>>({
-    url: '/system/menu',
-    method: 'put',
+    url: '/system/menu/update',
+    method: 'post',
     data,
   })
 }
@@ -80,8 +80,8 @@ export function updateMenu(data: MenuForm) {
 // 删除菜单
 export function deleteMenu(id: number, version: number) {
   return request<ApiResponse<void>>({
-    url: `/system/menu/${id}`,
-    method: 'delete',
-    params: { version },
+    url: '/system/menu/delete',
+    method: 'post',
+    data: { id, version },
   })
 }

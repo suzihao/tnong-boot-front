@@ -82,10 +82,10 @@ export function createCategory(data: CategoryForm) {
 /**
  * 更新目录
  */
-export function updateCategory(id: number, data: CategoryForm) {
+export function updateCategory(data: CategoryForm) {
   return request<ApiResponse<KnowledgeCategory>>({
-    url: `/kb/category/${id}`,
-    method: 'put',
+    url: '/kb/category/update',
+    method: 'post',
     data,
   })
 }
@@ -95,8 +95,9 @@ export function updateCategory(id: number, data: CategoryForm) {
  */
 export function deleteCategory(id: number) {
   return request<ApiResponse<void>>({
-    url: `/kb/category/${id}`,
-    method: 'delete',
+    url: '/kb/category/delete',
+    method: 'post',
+    data: { id },
   })
 }
 
@@ -157,10 +158,10 @@ export function createDocument(data: DocumentForm) {
 /**
  * 更新文档
  */
-export function updateDocument(id: number, data: DocumentForm) {
+export function updateDocument(data: DocumentForm) {
   return request<ApiResponse<KnowledgeDocument>>({
-    url: `/kb/document/${id}`,
-    method: 'put',
+    url: '/kb/document/update',
+    method: 'post',
     data,
   })
 }
@@ -170,7 +171,8 @@ export function updateDocument(id: number, data: DocumentForm) {
  */
 export function deleteDocument(id: number) {
   return request<ApiResponse<void>>({
-    url: `/kb/document/${id}`,
-    method: 'delete',
+    url: '/kb/document/delete',
+    method: 'post',
+    data: { id },
   })
 }

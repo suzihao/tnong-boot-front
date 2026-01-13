@@ -89,8 +89,8 @@ export function createUser(data: UserForm) {
  */
 export function updateUser(data: UserForm) {
   return request<ApiResponse<User>>({
-    url: '/system/user',
-    method: 'put',
+    url: '/system/user/update',
+    method: 'post',
     data,
   })
 }
@@ -100,9 +100,9 @@ export function updateUser(data: UserForm) {
  */
 export function deleteUser(userId: string, version: number) {
   return request<ApiResponse<void>>({
-    url: `/system/user/${userId}`,
-    method: 'delete',
-    params: { version },
+    url: '/system/user/delete',
+    method: 'post',
+    data: { id: userId, version },
   })
 }
 
