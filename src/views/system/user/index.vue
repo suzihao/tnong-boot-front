@@ -26,8 +26,7 @@ import {
 } from 'naive-ui'
 import { ref, reactive, h, onMounted } from 'vue'
 
-import { ScrollContainer } from '@/components'
-import { useUserStore } from '@/stores/user'
+import { getRoleList, type Role } from '@/api/role'
 import {
   getUserPage,
   getUserById,
@@ -40,7 +39,8 @@ import {
   type UserForm,
   type UserPageParams,
 } from '@/api/user'
-import { getRoleList, type Role } from '@/api/role'
+import { ScrollContainer } from '@/components'
+import { useUserStore } from '@/stores/user'
 
 defineOptions({
   name: 'SystemUser',

@@ -145,6 +145,8 @@ export const useUserStore = defineStore('userStore', () => {
         // 如果有子菜单，递归处理
         if (menu.children && menu.children.length > 0) {
           const childOptions = transformMenusToOptions(menu.children, fullPath)
+          // 只有当过滤后的子菜单不为空时，才设置 children
+          // 这样可以避免按钮权限导致的空 children 数组问题
           if (childOptions.length > 0) {
             option.children = childOptions
             // 目录类型需要重定向到第一个有组件的子菜单
@@ -154,7 +156,10 @@ export const useUserStore = defineStore('userStore', () => {
               option.redirect = firstChildWithComponent.path
             }
           }
-        } else if (menu.type === 2) {
+        }
+
+        // 如果是菜单类型且没有有效的子菜单（children为空或不存在），设置组件路径
+        if (menu.type === 2 && (!option.children || option.children.length === 0)) {
           // 叶子节点且是菜单类型，设置组件路径
           // 如果后端没有提供 component，根据 path 自动生成
           if (menu.component) {
