@@ -6,7 +6,7 @@
 
 - **Vue 3** - 渐进式 JavaScript 框架
 - **Vite** - 下一代前端构建工具
-- **Element Plus** - Vue 3 UI 组件库
+- **Naive UI** - Vue 3 UI 组件库
 - **Vue Router** - 官方路由管理器
 - **Pinia** - Vue 状态管理
 - **Axios** - HTTP 客户端

@@ -74,4 +74,9 @@ service.interceptors.response.use(
   },
 )
 
-export default service
+// 封装 request 方法，明确返回类型
+function request<T = any>(config: AxiosRequestConfig): Promise<T> {
+  return service(config) as Promise<T>
+}
+
+export default request

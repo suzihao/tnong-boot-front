@@ -1,17 +1,14 @@
 <script setup lang="tsx">
 import {
   NCard,
-  NSpace,
   NInput,
   NButton,
-  NDataTable,
   NModal,
   NForm,
   NFormItem,
   NSwitch,
   NTag,
   NPopconfirm,
-  NPagination,
   NSelect,
   useMessage,
   type DataTableColumns,
@@ -32,7 +29,7 @@ import {
   type JobForm,
   type JobPageParams,
 } from '@/api/job'
-import { ScrollContainer } from '@/components'
+import { ScrollContainer, QueryHeader, DataTable } from '@/components'
 
 defineOptions({
   name: 'SystemJob',
@@ -44,7 +41,6 @@ const loading = ref(false)
 const showModal = ref(false)
 const modalTitle = ref('新增任务')
 const formRef = ref<FormInst | null>(null)
-const queryFormRef = ref<FormInst | null>(null)
 const saving = ref(false)
 
 const queryParams = reactive<Omit<JobPageParams, 'page' | 'size'>>({
@@ -54,6 +50,8 @@ const queryParams = reactive<Omit<JobPageParams, 'page' | 'size'>>({
 })
 
 const tableData = ref<Job[]>([])
+const checkedRowKeys = ref<Array<number | string>>([])
+
 const pagination = reactive<PaginationProps>({
   page: 1,
   pageSize: 10,
@@ -180,12 +178,9 @@ const handleQuery = () => {
 }
 
 const handleReset = () => {
-  queryFormRef.value?.restoreValidation()
-  Object.assign(queryParams, {
-    jobName: '',
-    jobGroup: '',
-    status: undefined,
-  })
+  queryParams.jobName = ''
+  queryParams.jobGroup = ''
+  queryParams.status = undefined
   handleQuery()
 }
 
@@ -288,71 +283,54 @@ onMounted(() => {
 <template>
   <ScrollContainer wrapper-class="flex flex-col gap-y-2">
     <NCard class="flex-1" content-class="flex flex-col">
-      <!-- 查询表单 -->
-      <NForm
-        ref="queryFormRef"
-        :model="queryParams"
-        label-placement="left"
-        label-width="80"
-        class="mb-4"
+      <!-- 查询头部 -->
+      <QueryHeader
+        :query-fields="[
+          { label: '任务名称', slot: 'jobName' },
+          { label: '任务组', slot: 'jobGroup' },
+        ]"
+        :action-buttons="[
+          {
+            label: '新增任务',
+            type: 'success',
+            icon: 'ph--plus-circle',
+            onClick: handleCreate,
+          },
+          {
+            label: '查询',
+            type: 'info',
+            icon: 'ph--magnifying-glass',
+            onClick: handleQuery,
+            loading: loading,
+            disabled: loading,
+          },
+          {
+            label: '重置',
+            type: 'warning',
+            icon: 'ph--arrow-clockwise',
+            onClick: handleReset,
+          },
+        ]"
       >
-        <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 lg:grid-cols-4">
-          <NFormItem label="任务名称" path="jobName">
-            <NInput
-              v-model:value="queryParams.jobName"
-              placeholder="请输入任务名称"
-              clearable
-            />
-          </NFormItem>
-          <NFormItem label="任务组" path="jobGroup">
-            <NInput
-              v-model:value="queryParams.jobGroup"
-              placeholder="请输入任务组"
-              clearable
-            />
-          </NFormItem>
-          <NFormItem label=" " label-width="0">
-            <NSpace>
-              <NButton type="primary" @click="handleQuery">
-                <template #icon>
-                  <span class="iconify ph--magnifying-glass" />
-                </template>
-                查询
-              </NButton>
-              <NButton @click="handleReset">
-                <template #icon>
-                  <span class="iconify ph--arrow-counter-clockwise" />
-                </template>
-                重置
-              </NButton>
-            </NSpace>
-          </NFormItem>
-        </div>
-      </NForm>
+        <template #jobName>
+          <NInput v-model:value="queryParams.jobName" placeholder="任务名称" clearable />
+        </template>
+        <template #jobGroup>
+          <NInput v-model:value="queryParams.jobGroup" placeholder="任务组" clearable />
+        </template>
+      </QueryHeader>
 
-      <div class="mb-2 flex justify-end gap-x-4 max-xl:mb-4 max-xl:flex-wrap">
-        <div class="flex gap-2">
-          <NButton type="success" @click="handleCreate">
-            <template #icon>
-              <span class="iconify ph--plus-circle" />
-            </template>
-            新增任务
-          </NButton>
-        </div>
-      </div>
-
-      <div class="flex flex-1 flex-col">
-        <NDataTable
-          class="flex-1"
-          :columns="columns"
-          :data="tableData"
-          :loading="loading"
-          :single-line="true"
-        />
-        <div class="mt-4 flex justify-end">
-          <NPagination v-bind="pagination" />
-        </div>
-      </div>
+      <!-- 数据表格 -->
+      <DataTable
+        :columns="columns"
+        :data="tableData"
+        :loading="loading"
+        :pagination="pagination"
+        v-model:checked-row-keys="checkedRowKeys"
+        :row-key="(row) => row.id"
+        :scroll-x="1800"
+        :show-download-csv="false"
+      />
 
       <!-- 新增/编辑弹窗 -->
       <NModal

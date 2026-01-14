@@ -1,16 +1,13 @@
 <script setup lang="tsx">
 import {
   NCard,
-  NSpace,
   NInput,
   NButton,
-  NDataTable,
   NModal,
   NTag,
-  NPagination,
+  NSpace,
   useMessage,
   type DataTableColumns,
-  type FormInst,
   type PaginationProps,
 } from 'naive-ui'
 import { ref, reactive, h, onMounted } from 'vue'
@@ -21,7 +18,7 @@ import {
   type JobLog,
   type JobLogPageParams,
 } from '@/api/job-log'
-import { ScrollContainer } from '@/components'
+import { ScrollContainer, QueryHeader, DataTable } from '@/components'
 
 defineOptions({
   name: 'SystemJobLog',
@@ -31,7 +28,6 @@ const message = useMessage()
 
 const loading = ref(false)
 const showDetailModal = ref(false)
-const queryFormRef = ref<FormInst | null>(null)
 const currentLog = ref<JobLog | null>(null)
 
 const queryParams = reactive<Omit<JobLogPageParams, 'page' | 'size'>>({
@@ -41,6 +37,8 @@ const queryParams = reactive<Omit<JobLogPageParams, 'page' | 'size'>>({
 })
 
 const tableData = ref<JobLog[]>([])
+const checkedRowKeys = ref<Array<number | string>>([])
+
 const pagination = reactive<PaginationProps>({
   page: 1,
   pageSize: 10,
@@ -128,12 +126,9 @@ const handleQuery = () => {
 }
 
 const handleReset = () => {
-  queryFormRef.value?.restoreValidation()
-  Object.assign(queryParams, {
-    jobName: '',
-    jobGroup: '',
-    status: undefined,
-  })
+  queryParams.jobName = ''
+  queryParams.jobGroup = ''
+  queryParams.status = undefined
   handleQuery()
 }
 
@@ -157,51 +152,48 @@ onMounted(() => {
 <template>
   <ScrollContainer wrapper-class="flex flex-col gap-y-2">
     <NCard class="flex-1" content-class="flex flex-col">
-      <!-- 查询表单 -->
-      <div class="mb-4 grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 lg:grid-cols-4">
-        <NSpace vertical>
-          <span class="text-sm">任务名称</span>
-          <NInput
-            v-model:value="queryParams.jobName"
-            placeholder="请输入任务名称"
-            clearable
-          />
-        </NSpace>
-        <NSpace vertical>
-          <span class="text-sm">任务组</span>
-          <NInput v-model:value="queryParams.jobGroup" placeholder="请输入任务组" clearable />
-        </NSpace>
-        <NSpace vertical>
-          <span class="text-sm">&nbsp;</span>
-          <NSpace>
-            <NButton type="primary" @click="handleQuery">
-              <template #icon>
-                <span class="iconify ph--magnifying-glass" />
-              </template>
-              查询
-            </NButton>
-            <NButton @click="handleReset">
-              <template #icon>
-                <span class="iconify ph--arrow-counter-clockwise" />
-              </template>
-              重置
-            </NButton>
-          </NSpace>
-        </NSpace>
-      </div>
+      <!-- 查询头部 -->
+      <QueryHeader
+        :query-fields="[
+          { label: '任务名称', slot: 'jobName' },
+          { label: '任务组', slot: 'jobGroup' },
+        ]"
+        :action-buttons="[
+          {
+            label: '查询',
+            type: 'info',
+            icon: 'ph--magnifying-glass',
+            onClick: handleQuery,
+            loading: loading,
+            disabled: loading,
+          },
+          {
+            label: '重置',
+            type: 'warning',
+            icon: 'ph--arrow-clockwise',
+            onClick: handleReset,
+          },
+        ]"
+      >
+        <template #jobName>
+          <NInput v-model:value="queryParams.jobName" placeholder="任务名称" clearable />
+        </template>
+        <template #jobGroup>
+          <NInput v-model:value="queryParams.jobGroup" placeholder="任务组" clearable />
+        </template>
+      </QueryHeader>
 
-      <div class="flex flex-1 flex-col">
-        <NDataTable
-          class="flex-1"
-          :columns="columns"
-          :data="tableData"
-          :loading="loading"
-          :single-line="true"
-        />
-        <div class="mt-4 flex justify-end">
-          <NPagination v-bind="pagination" />
-        </div>
-      </div>
+      <!-- 数据表格 -->
+      <DataTable
+        :columns="columns"
+        :data="tableData"
+        :loading="loading"
+        :pagination="pagination"
+        v-model:checked-row-keys="checkedRowKeys"
+        :row-key="(row) => row.id"
+        :scroll-x="1600"
+        :show-download-csv="false"
+      />
 
       <!-- 详情弹窗 -->
       <NModal

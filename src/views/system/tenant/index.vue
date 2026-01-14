@@ -4,7 +4,6 @@ import {
   NInput,
   NInputNumber,
   NButton,
-  NDataTable,
   NModal,
   NForm,
   NFormItem,
@@ -12,7 +11,6 @@ import {
   NTag,
   NPopconfirm,
   NDatePicker,
-  NPagination,
   useMessage,
   type DataTableColumns,
   type FormInst,
@@ -21,7 +19,7 @@ import {
 } from 'naive-ui'
 import { ref, reactive, h, onMounted } from 'vue'
 
-import { ScrollContainer } from '@/components'
+import { ScrollContainer, QueryHeader, DataTable } from '@/components'
 import {
   getTenantPage,
   getTenantById,
@@ -43,7 +41,6 @@ const loading = ref(false)
 const showModal = ref(false)
 const modalTitle = ref('新增租户')
 const formRef = ref<FormInst | null>(null)
-const queryFormRef = ref<FormInst | null>(null)
 
 const queryParams = reactive<Omit<TenantPageParams, 'page' | 'size'>>({
   tenantCode: undefined,
@@ -51,6 +48,8 @@ const queryParams = reactive<Omit<TenantPageParams, 'page' | 'size'>>({
 })
 
 const tableData = ref<Tenant[]>([])
+const checkedRowKeys = ref<Array<number | string>>([])
+
 const pagination = reactive<PaginationProps>({
   page: 1,
   pageSize: 10,
@@ -86,6 +85,7 @@ const rules: FormRules = {
 }
 
 const columns: DataTableColumns<Tenant> = [
+  { type: 'selection' },
   { title: 'ID', key: 'id', width: 80 },
   { title: '租户编码', key: 'tenantCode', width: 150 },
   { title: '租户名称', key: 'name', width: 150 },
@@ -141,8 +141,8 @@ const getList = async () => {
   try {
     const params: TenantPageParams = {
       ...queryParams,
-      page: pagination.page,
-      size: pagination.pageSize,
+      page: pagination.page!,
+      size: pagination.pageSize!,
     }
     const res = await getTenantPage(params)
     if (res.code === 200) {
@@ -243,67 +243,59 @@ onMounted(() => {
 <template>
   <ScrollContainer wrapper-class="flex flex-col gap-y-2">
     <NCard class="flex-1" content-class="flex flex-col">
-      <div class="mb-2 flex justify-end gap-x-4 max-xl:mb-4 max-xl:flex-wrap">
-        <NForm
-          ref="queryFormRef"
-          :model="queryParams"
-          :inline="true"
-          label-placement="left"
-        >
-          <NFormItem label="租户编码">
-            <NInputNumber
-              v-model:value="queryParams.tenantCode"
-              placeholder="租户编码"
-              clearable
-              :show-button="false"
-            />
-          </NFormItem>
-          <NFormItem label="租户名称">
-            <NInput
-              v-model:value="queryParams.name"
-              placeholder="租户名称"
-              clearable
-            />
-          </NFormItem>
-        </NForm>
-        <div class="flex gap-2">
-          <NButton type="success" @click="handleAdd">
-            <template #icon>
-              <span class="iconify ph--plus-circle" />
-            </template>
-            新增租户
-          </NButton>
-          <NButton type="info" @click="handleQuery" :loading="loading" :disabled="loading">
-            <template #icon>
-              <span class="iconify ph--magnifying-glass" />
-            </template>
-            查询
-          </NButton>
-          <NButton type="warning" @click="handleReset">
-            <template #icon>
-              <span class="iconify ph--arrow-clockwise" />
-            </template>
-            重置
-          </NButton>
-        </div>
-      </div>
+      <!-- 查询头部 -->
+      <QueryHeader
+        :query-fields="[
+          { label: '租户编码', slot: 'tenantCode' },
+          { label: '租户名称', slot: 'name' },
+        ]"
+        :action-buttons="[
+          {
+            label: '新增租户',
+            type: 'success',
+            icon: 'ph--plus-circle',
+            onClick: handleAdd,
+          },
+          {
+            label: '查询',
+            type: 'info',
+            icon: 'ph--magnifying-glass',
+            onClick: handleQuery,
+            loading: loading,
+            disabled: loading,
+          },
+          {
+            label: '重置',
+            type: 'warning',
+            icon: 'ph--arrow-clockwise',
+            onClick: handleReset,
+          },
+        ]"
+      >
+        <template #tenantCode>
+          <NInputNumber
+            v-model:value="queryParams.tenantCode"
+            placeholder="租户编码"
+            clearable
+            :show-button="false"
+          />
+        </template>
+        <template #name>
+          <NInput v-model:value="queryParams.name" placeholder="租户名称" clearable />
+        </template>
+      </QueryHeader>
 
-      <div class="flex flex-1 flex-col">
-        <NDataTable
-          class="flex-1"
-          :columns="columns"
-          :data="tableData"
-          :loading="loading"
-          :remote="true"
-          :single-line="true"
-        />
-        <div class="mt-3 flex items-end justify-between max-xl:flex-col max-xl:gap-y-2">
-          <div class="flex items-center gap-x-3">
-            <span>共 {{ pagination.itemCount }} 条</span>
-          </div>
-          <NPagination v-bind="pagination" />
-        </div>
-      </div>
+      <!-- 数据表格 -->
+      <DataTable
+        :columns="columns"
+        :data="tableData"
+        :loading="loading"
+        :pagination="pagination"
+        v-model:checked-row-keys="checkedRowKeys"
+        :row-key="(row) => row.id"
+        :scroll-x="1800"
+        :show-download-csv="false"
+      />
 
       <!-- 新增/编辑弹窗 -->
       <NModal

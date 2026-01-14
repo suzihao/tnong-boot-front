@@ -1,5 +1,7 @@
 export * from './button-animation'
 export * from './collapse-transition'
+export * from './data-table'
 export * from './empty-placeholder'
 export * from './hint-help'
+export * from './query-header'
 export * from './scroll-container'

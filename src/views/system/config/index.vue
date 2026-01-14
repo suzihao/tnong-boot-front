@@ -1,13 +1,13 @@
 <script setup lang="tsx">
 import {
   NCard,
-  NSpace,
   NInput,
   NButton,
   NDataTable,
   NModal,
   NForm,
   NFormItem,
+  NSpace,
   NPopconfirm,
   NPagination,
   useMessage,
@@ -16,7 +16,7 @@ import {
   type FormRules,
   type PaginationProps,
 } from 'naive-ui'
-import { ref, reactive, h, onMounted } from 'vue'
+import { ref, reactive, h, onMounted, computed } from 'vue'
 
 import {
   getConfigPage,
@@ -27,7 +27,7 @@ import {
   type ConfigForm,
   type ConfigPageParams,
 } from '@/api/config'
-import { ScrollContainer } from '@/components'
+import { ScrollContainer, QueryHeader } from '@/components'
 
 defineOptions({
   name: 'SystemConfig',
@@ -39,7 +39,6 @@ const loading = ref(false)
 const showModal = ref(false)
 const modalTitle = ref('新增配置')
 const formRef = ref<FormInst | null>(null)
-const queryFormRef = ref<FormInst | null>(null)
 const saving = ref(false)
 
 const queryParams = reactive<Omit<ConfigPageParams, 'page' | 'size'>>({
@@ -81,6 +80,37 @@ const rules: FormRules = {
   configValue: { required: true, message: '请输入配置值', trigger: 'blur' },
 }
 
+// 查询字段配置
+const queryFields = [
+  { label: '配置键', slot: 'configKey' },
+  { label: '配置名称', slot: 'configName' },
+  { label: '配置类型', slot: 'configType' },
+]
+
+// 操作按钮配置
+const actionButtons = computed(() => [
+  {
+    label: '新增配置',
+    type: 'success' as const,
+    icon: 'ph--plus-circle',
+    onClick: handleCreate,
+  },
+  {
+    label: '查询',
+    type: 'info' as const,
+    icon: 'ph--magnifying-glass',
+    onClick: handleQuery,
+    loading: loading.value,
+    disabled: loading.value,
+  },
+  {
+    label: '重置',
+    type: 'warning' as const,
+    icon: 'ph--arrow-clockwise',
+    onClick: handleReset,
+  },
+])
+
 const columns: DataTableColumns<Config> = [
   { title: 'ID', key: 'id', width: 80 },
   { title: '配置键', key: 'configKey', width: 200 },
@@ -108,7 +138,7 @@ const columns: DataTableColumns<Config> = [
           {{
             default: () => `确定删除配置【${row.configName}】吗？`,
             trigger: () => (
-              <NButton secondary type="error" size="small">
+           <NButton secondary type="error" size="small">
                 删除
               </NButton>
             ),
@@ -144,7 +174,6 @@ const handleQuery = () => {
 }
 
 const handleReset = () => {
-  queryFormRef.value?.restoreValidation()
   Object.assign(queryParams, {
     configKey: '',
     configName: '',
@@ -225,65 +254,30 @@ onMounted(() => {
 <template>
   <ScrollContainer wrapper-class="flex flex-col gap-y-2">
     <NCard class="flex-1" content-class="flex flex-col">
-      <!-- 查询表单 -->
-      <NForm
-        ref="queryFormRef"
-        :model="queryParams"
-        label-placement="left"
-        label-width="80"
-        class="mb-4"
-      >
-        <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 lg:grid-cols-4">
-          <NFormItem label="配置键" path="configKey">
-            <NInput
-              v-model:value="queryParams.configKey"
-              placeholder="请输入配置键"
-              clearable
-            />
-          </NFormItem>
-          <NFormItem label="配置名称" path="configName">
-            <NInput
-              v-model:value="queryParams.configName"
-              placeholder="请输入配置名称"
-              clearable
-            />
-          </NFormItem>
-          <NFormItem label="配置类型" path="configType">
-            <NInput
-              v-model:value="queryParams.configType"
-              placeholder="请输入配置类型"
-              clearable
-            />
-          </NFormItem>
-          <NFormItem label=" " label-width="0">
-            <NSpace>
-              <NButton type="primary" @click="handleQuery">
-                <template #icon>
-                  <span class="iconify ph--magnifying-glass" />
-                </template>
-                查询
-              </NButton>
-              <NButton @click="handleReset">
-                <template #icon>
-                  <span class="iconify ph--arrow-counter-clockwise" />
-                </template>
-                重置
-              </NButton>
-            </NSpace>
-          </NFormItem>
-        </div>
-      </NForm>
-
-      <div class="mb-2 flex justify-end gap-x-4 max-xl:mb-4 max-xl:flex-wrap">
-        <div class="flex gap-2">
-          <NButton type="success" @click="handleCreate">
-            <template #icon>
-              <span class="iconify ph--plus-circle" />
-            </template>
-            新增配置
-          </NButton>
-        </div>
-      </div>
+      <!-- 查询头部 -->
+      <QueryHeader :query-fields="queryFields" :action-buttons="actionButtons" :loading="loading">
+        <template #configKey>
+          <NInput
+            v-model:value="queryParams.configKey"
+            placeholder="请输入配置键"
+            clearable
+          />
+        </template>
+        <template #configName>
+          <NInput
+            v-model:value="queryParams.configName"
+            placeholder="请输入配置名称"
+            clearable
+          />
+        </template>
+        <template #configType>
+          <NInput
+            v-model:value="queryParams.configType"
+            placeholder="请输入配置类型"
+            clearable
+          />
+        </template>
+      </QueryHeader>
 
       <div class="flex flex-1 flex-col">
         <NDataTable

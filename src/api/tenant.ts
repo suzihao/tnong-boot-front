@@ -6,6 +6,7 @@ import type { ApiResponse } from '@/utils/request'
 export interface Tenant {
   id?: number
   tenantId?: number
+  tenantCode?: number
   name: string
   contactName?: string
   contactPhone?: string
@@ -39,12 +40,13 @@ export interface PageResponse<T> {
 export interface TenantForm {
   id?: number
   tenantId?: number
+  tenantCode?: number
   name: string
   contactName?: string
   contactPhone?: string
   contactEmail?: string
   status: number
-  expireTime?: string
+  expireTime?: string | number
   remark?: string
   version?: number
 }

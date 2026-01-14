@@ -4,7 +4,6 @@ import {
   NSpace,
   NInput,
   NButton,
-  NDataTable,
   NModal,
   NForm,
   NFormItem,
@@ -12,7 +11,6 @@ import {
   NSwitch,
   NTag,
   NPopconfirm,
-  NPagination,
   useMessage,
   type DataTableColumns,
   type FormInst,
@@ -30,7 +28,7 @@ import {
   type DictItemForm,
   type DictItemPageParams,
 } from '@/api/dict-item'
-import { ScrollContainer } from '@/components'
+import { ScrollContainer, QueryHeader, DataTable } from '@/components'
 
 defineOptions({
   name: 'SystemDictItem',
@@ -42,7 +40,6 @@ const loading = ref(false)
 const showModal = ref(false)
 const modalTitle = ref('新增字典项')
 const formRef = ref<FormInst | null>(null)
-const queryFormRef = ref<FormInst | null>(null)
 const saving = ref(false)
 
 const queryParams = reactive<Omit<DictItemPageParams, 'page' | 'size'>>({
@@ -52,6 +49,8 @@ const queryParams = reactive<Omit<DictItemPageParams, 'page' | 'size'>>({
 })
 
 const tableData = ref<DictItem[]>([])
+const checkedRowKeys = ref<Array<number | string>>([])
+
 const pagination = reactive<PaginationProps>({
   page: 1,
   pageSize: 10,
@@ -86,6 +85,7 @@ const rules: FormRules = {
 }
 
 const columns: DataTableColumns<DictItem> = [
+  { type: 'selection' },
   { title: 'ID', key: 'id', width: 80 },
   { title: '字典编码', key: 'dictCode', width: 150 },
   { title: '字典标签', key: 'itemLabel', width: 150 },
@@ -160,12 +160,9 @@ const handleQuery = () => {
 }
 
 const handleReset = () => {
-  queryFormRef.value?.restoreValidation()
-  Object.assign(queryParams, {
-    dictCode: '',
-    itemLabel: '',
-    status: undefined,
-  })
+  queryParams.dictCode = ''
+  queryParams.itemLabel = ''
+  queryParams.status = undefined
   handleQuery()
 }
 
@@ -242,71 +239,62 @@ onMounted(() => {
 <template>
   <ScrollContainer wrapper-class="flex flex-col gap-y-2">
     <NCard class="flex-1" content-class="flex flex-col">
-      <!-- 查询表单 -->
-      <NForm
-        ref="queryFormRef"
-        :model="queryParams"
-        label-placement="left"
-        label-width="80"
-        class="mb-4"
+      <!-- 查询头部 -->
+      <QueryHeader
+        :query-fields="[
+          { label: '字典编码', slot: 'dictCode' },
+          { label: '字典标签', slot: 'itemLabel' },
+        ]"
+        :action-buttons="[
+          {
+            label: '新增字典项',
+            type: 'success',
+            icon: 'ph--plus-circle',
+            onClick: handleCreate,
+          },
+          {
+            label: '查询',
+            type: 'info',
+            icon: 'ph--magnifying-glass',
+            onClick: handleQuery,
+            loading: loading,
+            disabled: loading,
+          },
+          {
+            label: '重置',
+            type: 'warning',
+            icon: 'ph--arrow-clockwise',
+            onClick: handleReset,
+          },
+        ]"
       >
-        <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 lg:grid-cols-4">
-          <NFormItem label="字典编码" path="dictCode">
-            <NInput
-              v-model:value="queryParams.dictCode"
-              placeholder="请输入字典编码"
-              clearable
-            />
-          </NFormItem>
-          <NFormItem label="字典标签" path="itemLabel">
-            <NInput
-              v-model:value="queryParams.itemLabel"
-              placeholder="请输入字典标签"
-              clearable
-            />
-          </NFormItem>
-          <NFormItem label=" " label-width="0">
-            <NSpace>
-              <NButton type="primary" @click="handleQuery">
-                <template #icon>
-                  <span class="iconify ph--magnifying-glass" />
-                </template>
-                查询
-              </NButton>
-              <NButton @click="handleReset">
-                <template #icon>
-                  <span class="iconify ph--arrow-counter-clockwise" />
-                </template>
-                重置
-              </NButton>
-            </NSpace>
-          </NFormItem>
-        </div>
-      </NForm>
+        <template #dictCode>
+          <NInput
+            v-model:value="queryParams.dictCode"
+            placeholder="请输入字典编码"
+            clearable
+          />
+        </template>
+        <template #itemLabel>
+          <NInput
+            v-model:value="queryParams.itemLabel"
+            placeholder="请输入字典标签"
+            clearable
+          />
+        </template>
+      </QueryHeader>
 
-      <div class="mb-2 flex justify-end gap-x-4 max-xl:mb-4 max-xl:flex-wrap">
-        <div class="flex gap-2">
-          <NButton type="success" @click="handleCreate">
-            <template #icon>
-              <span class="iconify ph--plus-circle" />
-            </template>
-            新增字典项
-          </NButton>
-        </div>
-      </div>
-
-      <div class="flex flex-1 flex-col">
-        <NDataTable
-          class="flex-1"
-          :columns="columns"
-          :data="tableData"
-          :loading="loading"
-          :single-line="true"
-        />
-        <div class="mt-4 flex justify-end">
-          <NPagination v-bind="pagination" />
-        </div>
-      </div>
+      <!-- 数据表格 -->
+      <DataTable
+        :columns="columns"
+        :data="tableData"
+        :loading="loading"
+        :pagination="pagination"
+        v-model:checked-row-keys="checkedRowKeys"
+        :row-key="(row: DictItem) => row.id!"
+        :scroll-x="0"
+        :show-download-csv="false"
+      />
 
       <!-- 新增/编辑弹窗 -->
       <NModal
